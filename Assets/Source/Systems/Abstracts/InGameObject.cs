@@ -11,7 +11,7 @@ namespace Assets.Source.Systems.Abstracts
     {
         private GameObject _gameObject = null;
         private Transform _parent = null;
-        protected GameObject GameObject
+        public GameObject GameObject
         {
             get
             {
@@ -29,8 +29,8 @@ namespace Assets.Source.Systems.Abstracts
 
         public Vector3 Position
         {
-            get => GameObject.transform.position;
-            set => GameObject.transform.position = value;
+            get => GameObject.transform.localPosition;
+            set => GameObject.transform.localPosition = value;
         }
 
         public Quaternion Rotation
@@ -63,6 +63,8 @@ namespace Assets.Source.Systems.Abstracts
             set => GameObject.SetActive(value);
         }
 
+        public bool IsGrounded { get; private set; }
+
         public InGameObject(Transform parent = null)
         {
             _parent = parent;
@@ -76,19 +78,40 @@ namespace Assets.Source.Systems.Abstracts
         private GameObject Setup()
         {
             var obj = new GameObject();
+
             obj.AddComponent<MeshRenderer>();
             obj.AddComponent<MeshFilter>();
-            //obj.GetComponent<Renderer>().material.EnableKeyword("_NORMALMAP");
+            obj.AddComponent<MeshCollider>();
+
             obj.GetComponent<Renderer>().material.color = Color.white;
 
             Build(obj);
+
+            obj.GetComponent<MeshCollider>().sharedMesh = obj.GetComponent<MeshFilter>().mesh;
+            obj.GetComponent<MeshCollider>().convex = true;
+
             obj.name = Guid.NewGuid().ToString();
             if (_parent != null)
                 obj.transform.SetParent(_parent);
+
+            obj.AddComponent<Behaviour>();
+            obj.GetComponent<Behaviour>().OnStart += (object sender, EventArgs e) => OnStart();
+            obj.GetComponent<Behaviour>().OnUpdate += (object sender, EventArgs e) => OnLocalUpdate();
+            obj.GetComponent<Behaviour>().OnUpdate += (object sender, EventArgs e) => OnUpdate();
             return obj;
         }
 
-        public abstract void Build(GameObject obj);
+        private Vector3 _previousPosition = new Vector3();
+
+        private void OnLocalUpdate()
+        {
+            IsGrounded = Position.y == _previousPosition.y;
+            _previousPosition = new Vector3(Position.x, Position.y, Position.z);
+        }
+
+        protected abstract void Build(GameObject obj);
+        protected abstract void OnStart();
+        protected abstract void OnUpdate();
 
         public void SetParent(Transform parent) =>
             GameObject.transform.parent = parent;
@@ -114,5 +137,21 @@ namespace Assets.Source.Systems.Abstracts
         {
             Name = name;
         }
+    }
+
+    public class Behaviour : MonoBehaviour
+    {
+        protected void Start()
+        {
+            OnStart?.Invoke(this, null);
+        }
+
+        protected void Update()
+        {
+            OnUpdate?.Invoke(this, null);
+        }
+
+        public EventHandler<EventArgs> OnStart;
+        public EventHandler<EventArgs> OnUpdate;
     }
 }

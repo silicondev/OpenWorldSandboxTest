@@ -20,7 +20,7 @@ namespace Assets.Source.World.Objects
             Location = location;
         }
 
-        public override void Build(GameObject obj)
+        protected override void Build(GameObject obj)
         {
             //obj.SetMesh(GenerateMesh());
             obj.GetComponent<MeshFilter>().mesh = GenerateMesh();
@@ -30,7 +30,7 @@ namespace Assets.Source.World.Objects
 
         public void Regenerate()
         {
-            GameObject.SetMesh(GenerateMesh());
+            GameObject.GetComponent<MeshFilter>().mesh = GenerateMesh();
         }
 
         private Mesh GenerateMesh()
@@ -270,6 +270,16 @@ namespace Assets.Source.World.Objects
             }
 
             return (new Vector3[0], new int[0], new Vector2[0]);
+        }
+
+        protected override void OnStart()
+        {
+
+        }
+
+        protected override void OnUpdate()
+        {
+
         }
     }
 }

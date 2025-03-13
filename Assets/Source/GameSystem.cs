@@ -16,6 +16,10 @@ public class GameSystem : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        transform.localPosition = new Vector3(0, 0, 0);
+
+        // INITIALISE WORLD
+
         WorldData = new WorldData(WorldSize, WorldHeight, (int worldSize, int worldHeight) =>
         {
             var voxels = new Voxel[worldSize, worldHeight, worldSize];
@@ -24,6 +28,7 @@ public class GameSystem : MonoBehaviour
                 for (int z = 0; z < worldSize; z++)
                 {
                     int height = 5 + Random.Range(1, 4);
+                    //int height = 10;
 
                     for (int y = 0; y < worldHeight; y++)
                     {
@@ -44,10 +49,6 @@ public class GameSystem : MonoBehaviour
 
         WorldData.Generate();
 
-        //var chunk = new Chunk(new Location());
-        //chunk.SetParent(transform);
-        //LoadedObjects.Add(chunk);
-
         int worldChunkSize = WorldSize / ChunkSize;
 
         for (int cz = 0; cz < worldChunkSize; cz++)
@@ -56,9 +57,25 @@ public class GameSystem : MonoBehaviour
             {
                 var chunk = new Chunk(new Location(cx - worldChunkSize / 2, 0, cz - worldChunkSize / 2));
                 chunk.SetParent(transform);
+                chunk.Name = $"chunk_{chunk.Name}";
                 LoadedObjects.Add(chunk);
             }
         }
+
+        // INITIALISE PLAYER
+
+        var player = new Player();
+        player.SetParent(transform);
+        player.Name = "Player";
+        player.Position = new Vector3(0, 40, 0);
+        LoadedObjects.Add(player);
+
+        var camera = new GameObject();
+        camera.tag = "MainCamera";
+        camera.name = "Camera";
+        camera.transform.SetParent(player.GameObject.transform);
+        camera.transform.localPosition = new Vector3(0, 0, 0);
+        camera.AddComponent<Camera>();
     }
 
     // Update is called once per frame
