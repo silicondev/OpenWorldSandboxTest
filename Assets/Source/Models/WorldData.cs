@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using UnityEngine;
 
 namespace Assets.Source.Models
 {
@@ -13,6 +14,12 @@ namespace Assets.Source.Models
         {
             get => GetBlock(l);
             set => SetBlock(l, value.Type);
+        }
+
+        public Voxel this[Vector3 v]
+        {
+            get => GetBlock(v);
+            set => SetBlock(v, value.Type);
         }
 
         public Voxel[,,] Voxels { get; private set; }
@@ -52,6 +59,9 @@ namespace Assets.Source.Models
             Voxels = generator(_worldSize, _worldHeight);
         }
 
+        public Voxel GetBlock(Vector3 vector) =>
+            GetBlock(Location.ClampVector(vector));
+
         public Voxel GetBlock(Location l)
         {
             var arrayLocation = l + new Location(_worldSize / 2, 0, _worldSize / 2);
@@ -63,6 +73,9 @@ namespace Assets.Source.Models
 
             return Voxels[arrayLocation.X, arrayLocation.Y, arrayLocation.Z];
         }
+
+        public void SetBlock(Vector3 vector, VoxelType v) =>
+            SetBlock(Location.ClampVector(vector), v);
 
         public void SetBlock(Location l, VoxelType v)
         {

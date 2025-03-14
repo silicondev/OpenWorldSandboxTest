@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using UnityEngine;
 
 namespace Assets.Source.Models
 {
@@ -17,6 +18,17 @@ namespace Assets.Source.Models
             Location = location;
             Type = type;
         }
+
+        public BoundingBox GetBox() =>
+            new BoundingBox(
+                Location.ToVector3(),
+                Location.ToVector3() - new Vector3(1, 0, 0),
+                Location.ToVector3() - new Vector3(0, 0, 1),
+                Location.ToVector3() - new Vector3(1, 0, 1),
+                Location.ToVector3() - new Vector3(0, 1, 0),
+                Location.ToVector3() - new Vector3(1, 1, 0),
+                Location.ToVector3() - new Vector3(0, 1, 1),
+                Location.ToVector3() - Vector3.one);
     }
 
     public enum VoxelType

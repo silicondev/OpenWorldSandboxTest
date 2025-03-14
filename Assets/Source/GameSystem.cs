@@ -3,15 +3,22 @@ using Assets.Source.Systems;
 using Assets.Source.World.Objects;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class GameSystem : MonoBehaviour
 {
-    public InGameObjectCollection LoadedObjects = new();
+    public static InGameObjectCollection LoadedObjects = new();
     public static WorldData WorldData { get; private set; }
     public static int WorldSize => 128;
     public static int WorldHeight => 128;
     public static int ChunkSize => 16;
+
+    public static Chunk[] GetChunks()
+    {
+        var chunksObjs = LoadedObjects.Where(x => x.Name.StartsWith("chunk_"));
+        return chunksObjs.Cast<Chunk>().ToArray();
+    }
 
     // Start is called before the first frame update
     void Start()
@@ -74,7 +81,7 @@ public class GameSystem : MonoBehaviour
         camera.tag = "MainCamera";
         camera.name = "Camera";
         camera.transform.SetParent(player.GameObject.transform);
-        camera.transform.localPosition = new Vector3(0, 0, 0);
+        camera.transform.localPosition = new Vector3(0, 0.35f, 0.099f);
         camera.AddComponent<Camera>();
     }
 

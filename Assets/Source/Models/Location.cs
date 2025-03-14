@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace Assets.Source.Systems
+namespace Assets.Source.Models
 {
     public struct Location : IEquatable<Location>
     {
@@ -23,11 +23,20 @@ namespace Assets.Source.Systems
         public Vector3 ToVector3() =>
             new Vector3(X, Y, Z);
 
+        public static Location ClampVector(Vector3 vector) =>
+            new Location((int)Math.Ceiling(vector.x), (int)Math.Ceiling(vector.y), (int)Math.Ceiling(vector.z));
+
         public Location AddX(int a) => new Location(this.X + a, this.Y, this.Z);
         public Location AddY(int a) => new Location(this.X , this.Y + a, this.Z);
         public Location AddZ(int a) => new Location(this.X , this.Y, this.Z + a);
 
         public bool Equals(Location other) => this.X == other.X && this.Y == other.Y && this.Z == other.Z;
+        public override bool Equals(object obj) =>
+            obj is Location && Equals((Location)obj);
+
+        public override int GetHashCode() =>
+            HashCode.Combine(X, Y, Z);
+
         public static Location operator +(Location a) => a;
         public static Location operator -(Location a) => new Location(-a.X, -a.Y, -a.Z);
         public static Location operator +(Location a, Location b) => new Location(a.X + b.X, a.Y + b.Y, a.Z + b.Z);

@@ -14,5 +14,11 @@ namespace Assets.Source.Systems
 
         public static bool IsNullOrVoid(this VoxelType? type) =>
             type == null || type == VoxelType.VOID;
+
+        public static T GetMin<T>(this IEnumerable<T> arr, Func<T, double> valFunc)
+        {
+            double min = arr.Select(v => valFunc(v)).Min();
+            return arr.FirstOrDefault(x => valFunc(x) == min);
+        }
     }
 }

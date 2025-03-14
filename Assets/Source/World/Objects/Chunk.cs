@@ -25,7 +25,7 @@ namespace Assets.Source.World.Objects
             //obj.SetMesh(GenerateMesh());
             obj.GetComponent<MeshFilter>().mesh = GenerateMesh();
             obj.GetComponent<Renderer>().material.SetTexture("_MainTex", TextureHelper.LoadFromImage(@"Assets\Textures\tile.png"));
-            obj.transform.position = (Location * GameSystem.ChunkSize).ToVector3();
+            obj.transform.position = (Location * GameSystem.ChunkSize).ToVector3() + new Vector3(-1, 0, -1);
         }
 
         public void Regenerate()
@@ -274,12 +274,15 @@ namespace Assets.Source.World.Objects
 
         protected override void OnStart()
         {
-
+            GameObject.layer = LayerMask.NameToLayer("Environment");
         }
 
         protected override void OnUpdate()
         {
 
         }
+
+        protected override (Vector3 position, Vector3 velocity) CalculateMovement() =>
+            (Position, Vector3.zero);
     }
 }

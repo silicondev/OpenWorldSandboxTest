@@ -45,6 +45,9 @@ namespace Assets.Source.Systems.Abstracts
             set => GameObject.transform.localScale = value;
         }
 
+        public Vector3 Velocity { get; set; }
+        public float Drag { get; set; } = 16f;
+
         public Vector3 Center => 
             Renderer.bounds.center;
 
@@ -63,7 +66,10 @@ namespace Assets.Source.Systems.Abstracts
             set => GameObject.SetActive(value);
         }
 
-        public bool IsGrounded { get; private set; }
+        public bool IsGrounded { get; protected set; }
+
+        public bool GravityEnabled { get; set; } = false;
+        public bool CollisionEnabled { get; set; } = true;
 
         public InGameObject(Transform parent = null)
         {
@@ -84,11 +90,11 @@ namespace Assets.Source.Systems.Abstracts
             obj.AddComponent<MeshCollider>();
 
             obj.GetComponent<Renderer>().material.color = Color.white;
+            obj.GetComponent<MeshCollider>().convex = false;
 
             Build(obj);
 
             obj.GetComponent<MeshCollider>().sharedMesh = obj.GetComponent<MeshFilter>().mesh;
-            obj.GetComponent<MeshCollider>().convex = true;
 
             obj.name = Guid.NewGuid().ToString();
             if (_parent != null)
@@ -97,14 +103,46 @@ namespace Assets.Source.Systems.Abstracts
             obj.AddComponent<Behaviour>();
             obj.GetComponent<Behaviour>().OnStart += (object sender, EventArgs e) => OnStart();
             obj.GetComponent<Behaviour>().OnUpdate += (object sender, EventArgs e) => OnLocalUpdate();
-            obj.GetComponent<Behaviour>().OnUpdate += (object sender, EventArgs e) => OnUpdate();
+            obj.GetComponent<Behaviour>().OnCollisionOn += (object sender, CollisionEventArgs e) => OnCollisionEnter(e.Collision);
+            obj.GetComponent<Behaviour>().OnCollisionOff += (object sender, CollisionEventArgs e) => OnCollisionExit(e.Collision);
+            obj.GetComponent<Behaviour>().OnTriggerOn += (object sender, ColliderEventArgs e) => OnTriggerEnter(e.Collider);
+            obj.GetComponent<Behaviour>().OnTriggerOff += (object sender, ColliderEventArgs e) => OnTriggerExit(e.Collider);
             return obj;
         }
 
         private Vector3 _previousPosition = new Vector3();
 
+        bool keyPress = false;
+
         private void OnLocalUpdate()
         {
+            OnUpdate();
+
+            if (GravityEnabled)
+            {
+                // add gravity
+                Velocity += Vector3.ClampMagnitude(Physics.gravity * Time.fixedDeltaTime, 1);
+                //Velocity = new Vector3(-0.33f, -1f, -0.66f);
+                //Velocity = new Vector3(0, -0.2f, 0);
+            }
+
+            Velocity *= Mathf.Clamp01(1.0f - (Drag * Time.fixedDeltaTime));
+
+            if (Input.GetKey(KeyCode.K))
+            {
+                if (!keyPress)
+                {
+                    keyPress = true;
+                    Velocity += new Vector3(0, 35, 0);
+                }
+            }
+            else
+            {
+                keyPress = false;
+            }
+
+            (Position, Velocity) = CalculateMovement();
+
             IsGrounded = Position.y == _previousPosition.y;
             _previousPosition = new Vector3(Position.x, Position.y, Position.z);
         }
@@ -112,6 +150,11 @@ namespace Assets.Source.Systems.Abstracts
         protected abstract void Build(GameObject obj);
         protected abstract void OnStart();
         protected abstract void OnUpdate();
+        protected abstract (Vector3 position, Vector3 velocity) CalculateMovement();
+        protected virtual void OnCollisionEnter(Collision collision) { }
+        protected virtual void OnCollisionExit(Collision collision) { }
+        protected virtual void OnTriggerEnter(Collider collider) { }
+        protected virtual void OnTriggerExit(Collider collider) { }
 
         public void SetParent(Transform parent) =>
             GameObject.transform.parent = parent;
@@ -137,21 +180,5 @@ namespace Assets.Source.Systems.Abstracts
         {
             Name = name;
         }
-    }
-
-    public class Behaviour : MonoBehaviour
-    {
-        protected void Start()
-        {
-            OnStart?.Invoke(this, null);
-        }
-
-        protected void Update()
-        {
-            OnUpdate?.Invoke(this, null);
-        }
-
-        public EventHandler<EventArgs> OnStart;
-        public EventHandler<EventArgs> OnUpdate;
     }
 }
