@@ -46,7 +46,8 @@ namespace Assets.Source.Systems.Abstracts
         }
 
         public Vector3 Velocity { get; set; }
-        public float Drag { get; set; } = 16f;
+        public float Drag { get; set; } = 0.5f;
+        public float Friction { get; set; } = 1f;
 
         public Vector3 Center => 
             Renderer.bounds.center;
@@ -68,7 +69,7 @@ namespace Assets.Source.Systems.Abstracts
 
         public bool IsGrounded { get; protected set; }
 
-        public bool GravityEnabled { get; set; } = false;
+        public float Gravity { get; set; } = 0f;
         public bool CollisionEnabled { get; set; } = true;
 
         public InGameObject(Transform parent = null)
@@ -118,28 +119,14 @@ namespace Assets.Source.Systems.Abstracts
         {
             OnUpdate();
 
-            if (GravityEnabled)
+            if (Gravity != 0f)
             {
                 // add gravity
-                Velocity += Vector3.ClampMagnitude(Physics.gravity * Time.fixedDeltaTime, 1);
-                //Velocity = new Vector3(-0.33f, -1f, -0.66f);
-                //Velocity = new Vector3(0, -0.2f, 0);
+                Velocity += Vector3.ClampMagnitude(new Vector3(0, -Gravity, 0) * Time.fixedDeltaTime, 3);
             }
 
-            Velocity *= Mathf.Clamp01(1.0f - (Drag * Time.fixedDeltaTime));
-
-            if (Input.GetKey(KeyCode.K))
-            {
-                if (!keyPress)
-                {
-                    keyPress = true;
-                    Velocity += new Vector3(0, 35, 0);
-                }
-            }
-            else
-            {
-                keyPress = false;
-            }
+            // add drag/friction
+            Velocity *= Mathf.Clamp01(1.0f - ((IsGrounded ? Friction : Drag) * Time.fixedDeltaTime));
 
             (Position, Velocity) = CalculateMovement();
 

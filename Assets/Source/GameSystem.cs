@@ -13,6 +13,7 @@ public class GameSystem : MonoBehaviour
     public static int WorldSize => 128;
     public static int WorldHeight => 128;
     public static int ChunkSize => 16;
+    public static bool Paused { get; set; } = false;
 
     public static Chunk[] GetChunks()
     {
@@ -34,8 +35,13 @@ public class GameSystem : MonoBehaviour
             {
                 for (int z = 0; z < worldSize; z++)
                 {
-                    int height = 5 + Random.Range(1, 4);
+                    //int height = 5 + Random.Range(1, 4);
                     //int height = 10;
+                    //int height = Mathf.Clamp((int)(Mathf.PerlinNoise(x, z) * (float)WorldHeight), 0, worldHeight);
+                    float perlin = Mathf.PerlinNoise((float)x / (float)worldSize, (float)z / (float)worldSize);
+                    float real = perlin * (float)WorldHeight;
+                    int height = Mathf.Clamp((int)real, 0, worldHeight);
+
 
                     for (int y = 0; y < worldHeight; y++)
                     {
@@ -74,15 +80,8 @@ public class GameSystem : MonoBehaviour
         var player = new Player();
         player.SetParent(transform);
         player.Name = "Player";
-        player.Position = new Vector3(0, 40, 0);
+        player.Position = new Vector3(0, WorldHeight + 5, 0);
         LoadedObjects.Add(player);
-
-        var camera = new GameObject();
-        camera.tag = "MainCamera";
-        camera.name = "Camera";
-        camera.transform.SetParent(player.GameObject.transform);
-        camera.transform.localPosition = new Vector3(0, 0.35f, 0.099f);
-        camera.AddComponent<Camera>();
     }
 
     // Update is called once per frame

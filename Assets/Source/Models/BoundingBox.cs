@@ -129,34 +129,40 @@ namespace Assets.Source.Models
             return sorted[0].Key;
         }
 
-        public (Vector3? origin, RaycastHit? hit) Raycast(Vector3 direction)
+        public (Vector3 origin, RaycastHit hit)[] Raycast(Vector3 direction)
         {
             var list = new List<(Vector3 origin, RaycastHit hit)>();
-            if (Physics.Raycast(TopFrontRight, direction, out RaycastHit tfr, Vector3.Distance(TopFrontRight, TopFrontRight + direction)))
-                list.Add((TopFrontRight,tfr));
-            if (Physics.Raycast(TopFrontLeft, direction, out RaycastHit tfl, Vector3.Distance(TopFrontLeft, TopFrontLeft + direction)))
-                list.Add((TopFrontLeft, tfl));
-            if (Physics.Raycast(TopRearRight, direction, out RaycastHit trr, Vector3.Distance(TopRearRight, TopRearRight + direction)))
-                list.Add((TopRearRight, trr));
-            if (Physics.Raycast(TopRearLeft, direction, out RaycastHit trl, Vector3.Distance(TopRearLeft, TopRearLeft + direction)))
-                list.Add((TopRearLeft, trl));
-            if (Physics.Raycast(BottomFrontRight, direction, out RaycastHit bfr, Vector3.Distance(BottomFrontRight, BottomFrontRight + direction)))
-                list.Add((BottomFrontRight, bfr));
-            if (Physics.Raycast(BottomFrontLeft, direction, out RaycastHit bfl, Vector3.Distance(BottomFrontLeft, BottomFrontLeft + direction)))
-                list.Add((BottomFrontLeft, bfl));
-            if (Physics.Raycast(BottomRearRight, direction, out RaycastHit brr, Vector3.Distance(BottomRearRight, BottomRearRight + direction)))
-                list.Add((BottomRearRight, brr));
-            if (Physics.Raycast(BottomRearLeft, direction, out RaycastHit brl, Vector3.Distance(BottomRearLeft, BottomRearLeft + direction)))
-                list.Add((BottomRearLeft, brl));
+
+            var dirX = new Vector3(direction.x, 0, 0);
+            var dirY = new Vector3(0, direction.y, 0);
+            var dirZ = new Vector3(0, 0, direction.z);
+
+            var vertices = new Vector3[] { TopFrontRight, TopFrontLeft, TopRearRight, TopRearLeft, BottomFrontRight, BottomFrontLeft, BottomRearRight, BottomRearLeft };
+
+            foreach (var vertex in vertices)
+            {
+                if (Physics.Raycast(vertex, dirX, out RaycastHit hitX, Vector3.Distance(vertex, vertex + dirX)))
+                    list.Add((vertex, hitX));
+                if (Physics.Raycast(vertex, dirY, out RaycastHit hitY, Vector3.Distance(vertex, vertex + dirY)))
+                    list.Add((vertex, hitY));
+                if (Physics.Raycast(vertex, dirZ, out RaycastHit hitZ, Vector3.Distance(vertex, vertex + dirZ)))
+                    list.Add((vertex, hitZ));
+            }
 
             foreach (var item in list)
             {
                 Debug.DrawLine(item.origin, item.hit.point, Color.blue);
             }
 
-            if (list.Count == 0)
+            return list.ToArray();
+        }
+
+        public (Vector3? origin, RaycastHit? hit) RaycastMin(Vector3 direction)
+        {
+            var casts = Raycast(direction);
+            if (casts.Length == 0)
                 return (null, null);
-            return list.GetMin(x => Vector3.Distance(x.hit.point, x.origin));
+            return casts.GetMin(x => Vector3.Distance(x.hit.point, x.origin));
         }
     }
 }
