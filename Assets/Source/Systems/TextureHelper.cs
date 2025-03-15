@@ -107,7 +107,7 @@ namespace Assets.Source.Systems
             return uv;
         }
 
-        public static Vector2[] GetVoxelUV(Texture2D sheet, int voxelSize, Vector2 pos)
+        public static Vector2[] GetVoxelUV(Texture2D sheet, int voxelSize, Vector2 pos, float offset = 0.01f)
         {
             if (!int.TryParse((sheet.width / voxelSize).ToString(), out int voxelWidth) || !int.TryParse((sheet.height / voxelSize).ToString(), out int voxelHeight))
                 throw new ArgumentException("Sheet size and voxel size do not divide equally.");
@@ -117,6 +117,9 @@ namespace Assets.Source.Systems
             var voxelRel = new Vector2((float)voxelSize / (float)sheet.width, (float)voxelSize / (float)sheet.height);
             var voxelRelX = new Vector2(voxelRel.x, 0);
             var voxelRelY = new Vector2(0, voxelRel.y);
+
+            var offsetX = new Vector2(offset * voxelRel.x, 0);
+            var offsetY = new Vector2(0, offset * voxelRel.y);
 
             var rel = pos / voxelCount;
 
@@ -138,27 +141,12 @@ namespace Assets.Source.Systems
             */
 
             uv[0] = rel + voxelRel;
-            uv[1] = rel + voxelRelY;
-            uv[2] = rel + voxelRelX;
+            uv[1] = rel + voxelRelY + offsetX;
+            uv[2] = rel + voxelRelX + offsetY;
 
-            uv[3] = rel;
-            uv[4] = rel + voxelRelX;
-            uv[5] = rel + voxelRelY;
-
-            //var uv = new Vector2[4];
-
-            ///*
-            //2 --- 3
-            //|     |
-            //|     |
-            //0 --- 1
-
-            //*/
-
-            //uv[0] = rel + voxelRelY;
-            //uv[1] = rel + voxelRel;
-            //uv[2] = rel;
-            //uv[3] = rel + voxelRelX;
+            uv[3] = rel + offsetX + offsetY;
+            uv[4] = rel + voxelRelX + offsetY;
+            uv[5] = rel + voxelRelY + offsetX;
 
             return uv;
         }

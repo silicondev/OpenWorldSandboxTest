@@ -35,8 +35,8 @@ namespace Assets.Source.Systems.Abstracts
 
         public Quaternion Rotation
         {
-            get => GameObject.transform.rotation;
-            set => GameObject.transform.rotation = value;
+            get => GameObject.transform.localRotation;
+            set => GameObject.transform.localRotation = value;
         }
 
         public Vector3 Scale

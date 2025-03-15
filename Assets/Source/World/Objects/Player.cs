@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Assets.Source.World.Objects
 {
@@ -19,6 +20,17 @@ namespace Assets.Source.World.Objects
         {
 
         }
+
+        public Vector3 Front => Quaternion.Euler(new Vector3(0, Camera.transform.eulerAngles.y, 0)) * Vector3.forward;
+        //public Vector3 Front => Camera.transform.forward;
+        public Vector3 Right => Quaternion.Euler(new Vector3(0, Camera.transform.eulerAngles.y, 0)) * Vector3.right;
+        public Vector3 Left => -Right;
+        public Vector3 Back => -Front;
+
+        /// <summary>
+        /// Swapped for pranks
+        /// </summary>
+        public Vector2 Look { get; private set; } = Vector2.zero;
 
         protected override void Build(GameObject obj)
         {
@@ -40,7 +52,7 @@ namespace Assets.Source.World.Objects
             Camera.tag = "MainCamera";
             Camera.name = "Camera";
             Camera.transform.SetParent(GameObject.transform);
-            Camera.transform.localPosition = new Vector3(0, 0.35f, 0.099f);
+            Camera.transform.localPosition = new Vector3(0, 0.35f, 0);
             Camera.AddComponent<Camera>();
         }
 
@@ -49,24 +61,47 @@ namespace Assets.Source.World.Objects
 
         private Vector3 _lastMouse = new Vector3(-1, -1, -1);
 
+        private float _sensitivity = 3f;
+
         protected override void OnUpdate()
         {
-            Rotation = new Quaternion(0, Rotation.y, 0, 0);
+            //Rotation = new Quaternion(0, Rotation.y, 0, 0);
 
             if (!GameSystem.Paused)
             {
-                if (_lastMouse == new Vector3(-1, -1, -1))
-                    _lastMouse = Input.mousePosition;
+                //if (_lastMouse == new Vector3(-1, -1, -1))
+                //    _lastMouse = Input.mousePosition;
 
-                if (_lastMouse != Input.mousePosition)
-                {
-                    var diff = Input.mousePosition - _lastMouse;
-                    var camRot = Camera.gameObject.transform.rotation;
-                    //Camera.gameObject.transform.rotation = new Quaternion(camRot.x + diff.y, camRot.y, camRot.z, camRot.w);
-                    //Rotation = new Quaternion(Rotation.x, Rotation.y + diff.x, Rotation.z, Rotation.w);
+                //if (_lastMouse != Input.mousePosition)
+                //{
+                //    var diff = Input.mousePosition - _lastMouse;
+                //    var camRot = Camera.gameObject.transform.rotation;
+                //    //Camera.gameObject.transform.rotation = new Quaternion(camRot.x + diff.y, camRot.y, camRot.z, camRot.w);
+                //    //Rotation = new Quaternion(Rotation.x, Rotation.y + diff.x, Rotation.z, Rotation.w);
 
-                    _lastMouse = Input.mousePosition;
-                }
+                //    _lastMouse = Input.mousePosition;
+                //}
+
+                Vector2 mouseY = new Vector2(-Input.GetAxis("Mouse Y") * _sensitivity, 0);
+                Vector2 mouseX = new Vector2(0, Input.GetAxis("Mouse X") * _sensitivity);
+
+                Look += mouseX;
+
+                Vector2 checkVert = Look + mouseY;
+
+                if (checkVert.x <= 90 && checkVert.x >= -90)
+                    Look += mouseY;
+
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.lockState = CursorLockMode.Confined;
+                //Cursor.visible = false;
+
+                Camera.transform.eulerAngles = Look;
+            }
+            else
+            {
+                Cursor.lockState = CursorLockMode.None;
+                //Cursor.visible = true;
             }
             
 
@@ -79,7 +114,7 @@ namespace Assets.Source.World.Objects
         }
 
         private float _movementSpeed = 1f;
-        private float _jumpPower = 2f;
+        private float _jumpPower = 4f;
 
         private Vector3[] _normals = new Vector3[0];
 
@@ -95,13 +130,13 @@ namespace Assets.Source.World.Objects
             IsGrounded = _normals.Contains(Vector3.up);
 
             if (keys.Contains(KeyCode.W))
-                newVelocity += Vector3.ClampMagnitude(new Vector3(0, 0, _movementSpeed) * Time.fixedDeltaTime, _movementSpeed);
+                newVelocity += Vector3.ClampMagnitude(Vector3.Scale(Front * _movementSpeed, new Vector3(1, 0, 1)) * Time.fixedDeltaTime, _movementSpeed);
             if (keys.Contains(KeyCode.A))
-                newVelocity += Vector3.ClampMagnitude(new Vector3(-_movementSpeed, 0, 0) * Time.fixedDeltaTime, _movementSpeed);
+                newVelocity += Vector3.ClampMagnitude(Vector3.Scale(Left * _movementSpeed, new Vector3(1, 0, 1)) * Time.fixedDeltaTime, _movementSpeed);
             if (keys.Contains(KeyCode.S))
-                newVelocity += Vector3.ClampMagnitude(new Vector3(0, 0, -_movementSpeed) * Time.fixedDeltaTime, _movementSpeed);
+                newVelocity += Vector3.ClampMagnitude(Vector3.Scale(Back * _movementSpeed, new Vector3(1, 0, 1)) * Time.fixedDeltaTime, _movementSpeed);
             if (keys.Contains(KeyCode.D))
-                newVelocity += Vector3.ClampMagnitude(new Vector3(_movementSpeed, 0, 0) * Time.fixedDeltaTime, _movementSpeed);
+                newVelocity += Vector3.ClampMagnitude(Vector3.Scale(Right * _movementSpeed, new Vector3(1, 0, 1)) * Time.fixedDeltaTime, _movementSpeed);
             if (keys.Contains(KeyCode.Space))
             {
                 if (IsGrounded)
