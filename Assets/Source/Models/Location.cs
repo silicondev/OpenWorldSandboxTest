@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace Assets.Source.Models
 {
-    public struct Location : IEquatable<Location>
+    public struct Location : IEquatable<Location>, IFormattable
     {
         public int X { get; set; }
         public int Y { get; set; }
@@ -49,5 +49,10 @@ namespace Assets.Source.Models
         public static Location operator /(Location a, int b) => new Location(a.X / b, a.Y / b, a.Z / b);
         public static bool operator ==(Location a, Location b) => a.Equals(b);
         public static bool operator !=(Location a, Location b) => !a.Equals(b);
+        public override string ToString() => $"{X},{Y},{Z}";
+
+        public string ToString(string format) => format.Replace("X", X.ToString()).Replace("Y", Y.ToString()).Replace("Z", Z.ToString());
+
+        public string ToString(string format, IFormatProvider formatProvider) => ToString(format);
     }
 }

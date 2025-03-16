@@ -56,7 +56,8 @@ namespace Assets.Source.Systems
 
         public void Clear()
         {
-            _list.ForEach((x) => x.Dispose());
+            _list.ForEach((x) => x.Dispose(false));
+            _list.Clear();
         }
 
         public bool ContainsKey(string key) =>
@@ -75,7 +76,9 @@ namespace Assets.Source.Systems
         {
             if (ContainsKey(key))
             {
-                GetValue(key).Dispose();
+                var val = GetValue(key);
+                val.Dispose(false);
+                _list.Remove(val);
                 return true;
             }
             return false;

@@ -23,7 +23,17 @@ namespace Assets.Source.Systems.Abstracts
 
         public string Name
         {
-            get => GameObject.name;
+            get
+            {
+                try
+                {
+                    return _gameObject.name;
+                }
+                catch (Exception)
+                {
+                    return null;
+                }
+            }
             set => GameObject.name = value;
         }
 
@@ -46,8 +56,8 @@ namespace Assets.Source.Systems.Abstracts
         }
 
         public Vector3 Velocity { get; set; }
-        public float Drag { get; set; } = 0.5f;
-        public float Friction { get; set; } = 1f;
+        public float Drag { get; set; } = 2f;
+        public float Friction { get; set; } = 6f;
 
         public Vector3 Center => 
             Renderer.bounds.center;
@@ -85,7 +95,6 @@ namespace Assets.Source.Systems.Abstracts
         private GameObject Setup()
         {
             var obj = new GameObject();
-
             obj.AddComponent<MeshRenderer>();
             obj.AddComponent<MeshFilter>();
             obj.AddComponent<MeshCollider>();
@@ -113,8 +122,6 @@ namespace Assets.Source.Systems.Abstracts
 
         private Vector3 _previousPosition = new Vector3();
 
-        bool keyPress = false;
-
         private void OnLocalUpdate()
         {
             OnUpdate();
@@ -122,11 +129,11 @@ namespace Assets.Source.Systems.Abstracts
             if (Gravity != 0f)
             {
                 // add gravity
-                Velocity += Vector3.ClampMagnitude(new Vector3(0, -Gravity, 0) * Time.fixedDeltaTime, 3);
+                Velocity += Vector3.ClampMagnitude(new Vector3(0, -Gravity, 0) * Time.deltaTime, 3);
             }
 
             // add drag/friction
-            Velocity *= Mathf.Clamp01(1.0f - ((IsGrounded ? Friction : Drag) * Time.fixedDeltaTime));
+            Velocity *= Mathf.Clamp01(1.0f - ((IsGrounded ? Friction : Drag) * Time.deltaTime));
 
             (Position, Velocity) = CalculateMovement();
 
@@ -149,11 +156,18 @@ namespace Assets.Source.Systems.Abstracts
         public void SetTexture(Texture2D texture) =>
             Renderer.material.SetTexture("_MainTex", texture);
 
-        public void Dispose()
+        public void Dispose() => Dispose(true);
+
+        public void Dispose(bool triggerEvent)
         {
             string name = Name;
-            GameObject.Destroy(GameObject);
-            OnDispose.Invoke(this, new InGameObjectEventArgs(name));
+            if (_gameObject != null)
+            {
+                GameObject.Destroy(_gameObject);
+                _gameObject = null;
+            }
+            if (triggerEvent)
+                OnDispose.Invoke(this, new InGameObjectEventArgs(name));
         }
 
         public event EventHandler<InGameObjectEventArgs> OnDispose;

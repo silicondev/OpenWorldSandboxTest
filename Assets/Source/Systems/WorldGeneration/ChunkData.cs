@@ -1,4 +1,4 @@
-﻿using Assets.Source.Systems;
+﻿using Assets.Source.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,9 +6,9 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace Assets.Source.Models
+namespace Assets.Source.Systems.WorldGeneration
 {
-    public class WorldData
+    public class ChunkData
     {
         public Voxel this[Location l]
         {
@@ -22,41 +22,28 @@ namespace Assets.Source.Models
             set => SetBlock(v, value.Type);
         }
 
+        public Location Id { get; }
+
         public Voxel[,,] Voxels { get; private set; }
 
         public int Width => Voxels.GetLength(0);
         public int Height => Voxels.GetLength(1);
         public int Depth => Voxels.GetLength(2);
 
-        private Func<int, int, Voxel[,,]> _generator;
-        private int _worldSize;
-        private int _worldHeight;
+        private Generator _generator;
 
-        public WorldData(int worldSize, int worldHeight, Func<int, int, Voxel[,,]>? generator = null)
+        public ChunkData(Location id, Generator generator)
         {
-            _worldSize = worldSize;
-            _worldHeight = worldHeight;
-            if (generator == null)
-                generator = (int worldSize, int worldHeight) =>
-                {
-                    var voxels = new Voxel[worldSize, worldHeight, worldSize];
-                    for (int x = 0; x < worldSize; x++)
-                        for (int z = 0; z < worldSize; z++)
-                            for (int y = 0; y < worldHeight; y++)
-                            {
-                                voxels[x, y, z] = new Voxel(new Location(x - worldSize / 2, y, z - worldSize / 2), VoxelType.VOID);
-                            }
-                    return voxels;
-                };
+            Id = id;
             _generator = generator;
         }
 
-        public void Generate(Func<int, int, Voxel[,,]>? generator = null)
+        public async Task Generate(Generator? generator = null)
         {
             if (generator == null)
                 generator = _generator;
 
-            Voxels = generator(_worldSize, _worldHeight);
+            Voxels = await generator.GenerateChunk(Id);
         }
 
         public Voxel GetBlock(Vector3 vector) =>
@@ -64,9 +51,11 @@ namespace Assets.Source.Models
 
         public Voxel GetBlock(Location l)
         {
-            var arrayLocation = l + new Location(_worldSize / 2, 0, _worldSize / 2);
+            //var arrayLocation = l + new Location(_generator.Settings.WorldSize.x / 2, 0, _generator.Settings.WorldSize.y / 2);
+            var arrayLocation = l - (Id * _generator.Settings.ChunkSize);
 
-            if (arrayLocation.X >= Width || arrayLocation.X < 0 ||
+            if (Voxels == null ||
+                arrayLocation.X >= Width || arrayLocation.X < 0 ||
                 arrayLocation.Z >= Depth || arrayLocation.Z < 0 ||
                 arrayLocation.Y >= Height || arrayLocation.Y < 0)
                 return null;
@@ -79,9 +68,11 @@ namespace Assets.Source.Models
 
         public void SetBlock(Location l, VoxelType v)
         {
-            var arrayLocation = l + new Location(_worldSize / 2, 0, _worldSize / 2);
+            //var arrayLocation = l + new Location(_generator.Settings.WorldSize.x / 2, 0, _generator.Settings.WorldSize.y / 2);
+            var arrayLocation = l - (Id * _generator.Settings.ChunkSize);
 
-            if (arrayLocation.X >= Width || arrayLocation.X <= 0 ||
+            if (Voxels == null ||
+                arrayLocation.X >= Width || arrayLocation.X <= 0 ||
                 arrayLocation.Z >= Depth || arrayLocation.Z <= 0 ||
                 arrayLocation.Y >= Height || arrayLocation.Y <= 0)
                 return;

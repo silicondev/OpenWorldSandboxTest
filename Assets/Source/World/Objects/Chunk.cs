@@ -1,6 +1,7 @@
 ﻿using Assets.Source.Models;
 using Assets.Source.Systems;
 using Assets.Source.Systems.Abstracts;
+using Assets.Source.Systems.WorldGeneration;
 using Assets.Source.World.Prefabs;
 using System;
 using System.Collections.Generic;
@@ -20,261 +21,180 @@ namespace Assets.Source.World.Objects
             Location = location;
         }
 
-        protected override void Build(GameObject obj)
+        protected override async void Build(GameObject obj)
         {
-            //obj.SetMesh(GenerateMesh());
-            obj.GetComponent<MeshFilter>().mesh = GenerateMesh();
-            obj.GetComponent<Renderer>().material.SetTexture("_MainTex", TextureHelper.LoadFromImage(@"Assets\Textures\tile.png"));
-            obj.transform.position = (Location * GameSystem.ChunkSize).ToVector3() + new Vector3(-1, 0, -1);
-        }
-
-        public void Regenerate()
-        {
-            GameObject.GetComponent<MeshFilter>().mesh = GenerateMesh();
-        }
-
-        private Mesh GenerateMesh()
-        {
-            var vertices = new List<Vector3>();
-            var triangles = new List<int>();
-            var uv = new List<Vector2>();
-            var worldLocation = Location * GameSystem.ChunkSize;
-
-            var tasks = new List<Task<(Vector3[], int[], Vector2[])>>();
-            for (int z = 0; z < GameSystem.ChunkSize; z++)
-            {
-                for (int x = 0; x < GameSystem.ChunkSize; x++)
-                {
-                    int wz = z + worldLocation.Z;
-                    int wx = x + worldLocation.X;
-
-                    //tasks.Add(Task.Factory.StartNew(() => GetFaces(x, z, wx, wz)));
-
-                    (Vector3[] newVertices, int[] newTriangles, Vector2[] newUV) = GetFaces(x, z, wx, wz);
-                    int c = vertices.Count();
-
-                    vertices.AddRange(newVertices);
-                    uv.AddRange(newUV);
-
-                    foreach (int triangle in newTriangles)
-                        triangles.Add(triangle + c);
-                }
-            }
-
-            //Task.WaitAll(tasks.ToArray());
-
-            //foreach (var task in tasks)
-            //{
-            //    var result = task.Result;
-
-            //    int c = vertices.Count();
-
-            //    vertices.AddRange(result.Item1);
-            //    uv.AddRange(result.Item3);
-
-            //    foreach (int triangle in result.Item2)
-            //        triangles.Add(triangle + c);
-            //}
+            (Vector3[] vertices, int[] triangles, Vector2[] uv) = await GetMeshData();
 
             var mesh = new Mesh();
             mesh.vertices = vertices.ToArray();
             mesh.triangles = triangles.ToArray();
             mesh.uv = uv.ToArray();
             mesh.RecalculateNormals();
-            return mesh;
+
+            if (obj == null || obj.gameObject == null || obj.activeSelf == false)
+                return;
+
+            obj.GetComponent<MeshFilter>().mesh = mesh;
+            obj.GetComponent<Renderer>().material.SetTexture("_MainTex", GameSystem.StandardTexture);
+            obj.GetComponent<MeshCollider>().sharedMesh = mesh;
+            obj.transform.position = (Location * GameSystem.GenerationSettings.ChunkSize).ToVector3() + new Vector3(-1, 0, -1);
         }
 
-        private (Vector3[], int[], Vector2[]) GetFaces(int x, int z, int wx, int wz)
+        public async Task Regenerate()
+        {
+            (Vector3[] vertices, int[] triangles, Vector2[] uv) = await GetMeshData();
+
+            var mesh = new Mesh();
+            mesh.vertices = vertices.ToArray();
+            mesh.triangles = triangles.ToArray();
+            mesh.uv = uv.ToArray();
+            mesh.RecalculateNormals();
+            GameObject.GetComponent<MeshFilter>().mesh = mesh;
+            GameObject.GetComponent<MeshCollider>().sharedMesh = mesh;
+        }
+
+        private Task<(Vector3[] vertices, int[] triangles, Vector2[] uv)> GetMeshData() => Task.Factory.StartNew(() =>
         {
             var vertices = new List<Vector3>();
             var triangles = new List<int>();
             var uv = new List<Vector2>();
+            var worldLocation = Location * GameSystem.GenerationSettings.ChunkSize;
 
-            try
+            for (int z = 0; z < GameSystem.GenerationSettings.ChunkSize; z++)
             {
-                for (int y = 0; y < GameSystem.WorldHeight; y++)
+                for (int x = 0; x < GameSystem.GenerationSettings.ChunkSize; x++)
                 {
-                    var location = new Location(wx, y, wz);
-                    
+                    int wz = z + worldLocation.Z;
+                    int wx = x + worldLocation.X;
 
-                    var voxel = GameSystem.WorldData[location];
-                    var voxelU = GameSystem.WorldData[location.AddY(1)];
-                    var voxelD = GameSystem.WorldData[location.AddY(-1)];
-                    var voxelR = GameSystem.WorldData[location.AddX(1)];
-                    var voxelL = GameSystem.WorldData[location.AddX(-1)];
-                    var voxelF = GameSystem.WorldData[location.AddZ(1)];
-                    var voxelB = GameSystem.WorldData[location.AddZ(-1)];
-
-                    
-
-                    if (voxel == null || voxel.Type == VoxelType.VOID)
-                        continue;
-
-                    var prefab = VoxelPrefab.Prefabs[voxel.Type];
-
-                    /*
-
-                    1 --- 0
-                    | \   |
-                    |   \ |
-                    x --- 2
-
-                    5 --- x
-                    | \   |
-                    |   \ |
-                    3 --- 4
-
-
-                    */
-
-                    if (voxelD == null || voxelD.Type == VoxelType.VOID)
+                    for (int y = 0; y < GameSystem.GenerationSettings.WorldHeight; y++)
                     {
-                        // DOWN FACE
-                        int c = vertices.Count;
-                        vertices.Add(new Vector3(x + 0, y - 1, z + 0));
-                        vertices.Add(new Vector3(x + 1, y - 1, z + 0));
-                        vertices.Add(new Vector3(x + 0, y - 1, z + 1));
+                        var location = new Location(wx, y, wz);
 
-                        vertices.Add(new Vector3(x + 1, y - 1, z + 1));
-                        vertices.Add(new Vector3(x + 0, y - 1, z + 1));
-                        vertices.Add(new Vector3(x + 1, y - 1, z + 0));
+                        var voxel = GameSystem.WorldData[location];
+                        var voxelU = GameSystem.WorldData[location.AddY(1)];
+                        var voxelD = GameSystem.WorldData[location.AddY(-1)];
+                        var voxelR = GameSystem.WorldData[location.AddX(1)];
+                        var voxelL = GameSystem.WorldData[location.AddX(-1)];
+                        var voxelF = GameSystem.WorldData[location.AddZ(1)];
+                        var voxelB = GameSystem.WorldData[location.AddZ(-1)];
 
-                        uv.AddRange(prefab.GetVoxelUV(VoxelFace.BOTTOM));
+                        if (voxel == null || voxel.Type == VoxelType.VOID)
+                            continue;
 
-                        triangles.Add(c);
-                        triangles.Add(c + 1);
-                        triangles.Add(c + 2);
-                        triangles.Add(c + 3);
-                        triangles.Add(c + 4);
-                        triangles.Add(c + 5);
+                        var prefab = GameSystem.VoxelPrefabs[voxel.Type];
+
+                        /*
+
+                        1 --- 0
+                        | \   |
+                        |   \ |
+                        x --- 2
+
+                        5 --- x
+                        | \   |
+                        |   \ |
+                        3 --- 4
+
+
+                        */
+
+                        if (voxelD == null || voxelD.Type == VoxelType.VOID)
+                        {
+                            // DOWN FACE
+                            vertices.Add(new Vector3(x + 0, y - 1, z + 0));
+                            vertices.Add(new Vector3(x + 1, y - 1, z + 0));
+                            vertices.Add(new Vector3(x + 0, y - 1, z + 1));
+
+                            vertices.Add(new Vector3(x + 1, y - 1, z + 1));
+                            vertices.Add(new Vector3(x + 0, y - 1, z + 1));
+                            vertices.Add(new Vector3(x + 1, y - 1, z + 0));
+
+                            uv.AddRange(prefab.GetVoxelUV(VoxelFace.BOTTOM, GameSystem.StandardTextureWidth, GameSystem.StandardTextureHeight));
+                        }
+
+                        if (voxelU == null || voxelU.Type == VoxelType.VOID)
+                        {
+                            // UP FACE
+                            vertices.Add(new Vector3(x + 0, y + 0, z + 1));
+                            vertices.Add(new Vector3(x + 1, y + 0, z + 1));
+                            vertices.Add(new Vector3(x + 0, y + 0, z + 0));
+
+                            vertices.Add(new Vector3(x + 1, y + 0, z + 0));
+                            vertices.Add(new Vector3(x + 0, y + 0, z + 0));
+                            vertices.Add(new Vector3(x + 1, y + 0, z + 1));
+
+                            uv.AddRange(prefab.GetVoxelUV(VoxelFace.TOP, GameSystem.StandardTextureWidth, GameSystem.StandardTextureHeight));
+                        }
+
+                        if (voxelL == null || voxelL.Type == VoxelType.VOID)
+                        {
+                            // LEFT FACE
+                            vertices.Add(new Vector3(x + 0, y + 0, z + 1));
+                            vertices.Add(new Vector3(x + 0, y + 0, z + 0));
+                            vertices.Add(new Vector3(x + 0, y - 1, z + 1));
+
+                            vertices.Add(new Vector3(x + 0, y - 1, z + 0));
+                            vertices.Add(new Vector3(x + 0, y - 1, z + 1));
+                            vertices.Add(new Vector3(x + 0, y + 0, z + 0));
+
+                            uv.AddRange(prefab.GetVoxelUV(VoxelFace.LEFT, GameSystem.StandardTextureWidth, GameSystem.StandardTextureHeight));
+                        }
+
+                        if (voxelR == null || voxelR.Type == VoxelType.VOID)
+                        {
+                            // RIGHT FACE
+                            vertices.Add(new Vector3(x + 1, y + 0, z + 0));
+                            vertices.Add(new Vector3(x + 1, y + 0, z + 1));
+                            vertices.Add(new Vector3(x + 1, y - 1, z + 0));
+
+                            vertices.Add(new Vector3(x + 1, y - 1, z + 1));
+                            vertices.Add(new Vector3(x + 1, y - 1, z + 0));
+                            vertices.Add(new Vector3(x + 1, y + 0, z + 1));
+
+                            uv.AddRange(prefab.GetVoxelUV(VoxelFace.RIGHT, GameSystem.StandardTextureWidth, GameSystem.StandardTextureHeight));
+                        }
+
+                        if (voxelB == null || voxelB.Type == VoxelType.VOID)
+                        {
+                            // BACK FACE
+                            vertices.Add(new Vector3(x + 0, y + 0, z + 0));
+                            vertices.Add(new Vector3(x + 1, y + 0, z + 0));
+                            vertices.Add(new Vector3(x + 0, y - 1, z + 0));
+
+                            vertices.Add(new Vector3(x + 1, y - 1, z + 0));
+                            vertices.Add(new Vector3(x + 0, y - 1, z + 0));
+                            vertices.Add(new Vector3(x + 1, y + 0, z + 0));
+
+                            uv.AddRange(prefab.GetVoxelUV(VoxelFace.BACK, GameSystem.StandardTextureWidth, GameSystem.StandardTextureHeight));
+                        }
+
+                        if (voxelF == null || voxelF.Type == VoxelType.VOID)
+                        {
+                            // FRONT FACE
+                            vertices.Add(new Vector3(x + 1, y + 0, z + 1));
+                            vertices.Add(new Vector3(x + 0, y + 0, z + 1));
+                            vertices.Add(new Vector3(x + 1, y - 1, z + 1));
+
+                            vertices.Add(new Vector3(x + 0, y - 1, z + 1));
+                            vertices.Add(new Vector3(x + 1, y - 1, z + 1));
+                            vertices.Add(new Vector3(x + 0, y + 0, z + 1));
+
+                            uv.AddRange(prefab.GetVoxelUV(VoxelFace.FRONT, GameSystem.StandardTextureWidth, GameSystem.StandardTextureHeight));
+                        }
                     }
-
-                    if (voxelU == null || voxelU.Type == VoxelType.VOID)
-                    {
-                        // UP FACE
-                        int c = vertices.Count;
-                        vertices.Add(new Vector3(x + 0, y + 0, z + 1));
-                        vertices.Add(new Vector3(x + 1, y + 0, z + 1));
-                        vertices.Add(new Vector3(x + 0, y + 0, z + 0));
-
-                        vertices.Add(new Vector3(x + 1, y + 0, z + 0));
-                        vertices.Add(new Vector3(x + 0, y + 0, z + 0));
-                        vertices.Add(new Vector3(x + 1, y + 0, z + 1));
-
-                        uv.AddRange(prefab.GetVoxelUV(VoxelFace.TOP));
-
-                        triangles.Add(c);
-                        triangles.Add(c + 1);
-                        triangles.Add(c + 2);
-                        triangles.Add(c + 3);
-                        triangles.Add(c + 4);
-                        triangles.Add(c + 5);
-                    }
-
-                    if (voxelL == null || voxelL.Type == VoxelType.VOID)
-                    {
-                        // LEFT FACE
-                        int c = vertices.Count;
-                        vertices.Add(new Vector3(x + 0, y + 0, z + 1));
-                        vertices.Add(new Vector3(x + 0, y + 0, z + 0));
-                        vertices.Add(new Vector3(x + 0, y - 1, z + 1));
-
-                        vertices.Add(new Vector3(x + 0, y - 1, z + 0));
-                        vertices.Add(new Vector3(x + 0, y - 1, z + 1));
-                        vertices.Add(new Vector3(x + 0, y + 0, z + 0));
-
-                        uv.AddRange(prefab.GetVoxelUV(VoxelFace.LEFT));
-
-                        triangles.Add(c);
-                        triangles.Add(c + 1);
-                        triangles.Add(c + 2);
-                        triangles.Add(c + 3);
-                        triangles.Add(c + 4);
-                        triangles.Add(c + 5);
-                    }
-
-                    if (voxelR == null || voxelR.Type == VoxelType.VOID)
-                    {
-                        // RIGHT FACE
-                        int c = vertices.Count;
-                        vertices.Add(new Vector3(x + 1, y + 0, z + 0));
-                        vertices.Add(new Vector3(x + 1, y + 0, z + 1));
-                        vertices.Add(new Vector3(x + 1, y - 1, z + 0));
-
-                        vertices.Add(new Vector3(x + 1, y - 1, z + 1));
-                        vertices.Add(new Vector3(x + 1, y - 1, z + 0));
-                        vertices.Add(new Vector3(x + 1, y + 0, z + 1));
-
-                        uv.AddRange(prefab.GetVoxelUV(VoxelFace.RIGHT));
-
-                        triangles.Add(c);
-                        triangles.Add(c + 1);
-                        triangles.Add(c + 2);
-                        triangles.Add(c + 3);
-                        triangles.Add(c + 4);
-                        triangles.Add(c + 5);
-                    }
-
-                    if (voxelB == null || voxelB.Type == VoxelType.VOID)
-                    {
-                        // BACK FACE
-                        int c = vertices.Count;
-                        vertices.Add(new Vector3(x + 0, y + 0, z + 0));
-                        vertices.Add(new Vector3(x + 1, y + 0, z + 0));
-                        vertices.Add(new Vector3(x + 0, y - 1, z + 0));
-
-                        vertices.Add(new Vector3(x + 1, y - 1, z + 0));
-                        vertices.Add(new Vector3(x + 0, y - 1, z + 0));
-                        vertices.Add(new Vector3(x + 1, y + 0, z + 0));
-
-                        uv.AddRange(prefab.GetVoxelUV(VoxelFace.BACK));
-
-                        triangles.Add(c);
-                        triangles.Add(c + 1);
-                        triangles.Add(c + 2);
-                        triangles.Add(c + 3);
-                        triangles.Add(c + 4);
-                        triangles.Add(c + 5);
-                    }
-
-                    if (voxelF == null || voxelF.Type == VoxelType.VOID)
-                    {
-                        // FRONT FACE
-                        int c = vertices.Count;
-                        vertices.Add(new Vector3(x + 1, y + 0, z + 1));
-                        vertices.Add(new Vector3(x + 0, y + 0, z + 1));
-                        vertices.Add(new Vector3(x + 1, y - 1, z + 1));
-
-                        vertices.Add(new Vector3(x + 0, y - 1, z + 1));
-                        vertices.Add(new Vector3(x + 1, y - 1, z + 1));
-                        vertices.Add(new Vector3(x + 0, y + 0, z + 1));
-
-                        uv.AddRange(prefab.GetVoxelUV(VoxelFace.FRONT));
-
-                        triangles.Add(c);
-                        triangles.Add(c + 1);
-                        triangles.Add(c + 2);
-                        triangles.Add(c + 3);
-                        triangles.Add(c + 4);
-                        triangles.Add(c + 5);
-                    }
-
-                    Console.WriteLine($"Processed {wx},{y},{wz} with {vertices.Count} so far this pillar");
                 }
-
-                return (vertices.ToArray(), triangles.ToArray(), uv.ToArray());
-            }
-            catch (Exception what)
-            {
-                Debug.LogError(what);
             }
 
-            return (new Vector3[0], new int[0], new Vector2[0]);
-        }
+            for (int i = 0; i < vertices.Count(); i++)
+                triangles.Add(i);
 
+            return (vertices.ToArray(), triangles.ToArray(), uv.ToArray());
+        });
+        
         protected override void OnStart()
         {
-            GameObject.layer = LayerMask.NameToLayer("Environment");
+            //GameObject.layer = LayerMask.NameToLayer("Environment");
         }
 
         protected override void OnUpdate()

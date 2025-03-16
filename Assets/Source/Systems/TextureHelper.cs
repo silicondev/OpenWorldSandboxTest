@@ -22,9 +22,9 @@ namespace Assets.Source.Systems
             return texture;
         }
 
-        public static Vector2[] GetVoxelUV(Texture2D sheet, int voxelSize, Vector2 topPos, Vector2 bottomPos, Vector2 frontPos, Vector2 rightPos, Vector2 backPos, Vector2 leftPos)
+        public static Vector2[] GetVoxelUV(int sheetSizeX, int sheetSizeY, int voxelSize, Vector2 topPos, Vector2 bottomPos, Vector2 frontPos, Vector2 rightPos, Vector2 backPos, Vector2 leftPos)
         {
-            if (!int.TryParse((sheet.width / voxelSize).ToString(), out int voxelWidth) || !int.TryParse((sheet.height / voxelSize).ToString(), out int voxelHeight))
+            if (!int.TryParse((sheetSizeX / voxelSize).ToString(), out int voxelWidth) || !int.TryParse((sheetSizeY / voxelSize).ToString(), out int voxelHeight))
                 throw new ArgumentException("Sheet size and voxel size do not divide equally.");
 
             if (topPos.x > voxelWidth || topPos.x < 0 || topPos.y > voxelHeight || topPos.y < 0)
@@ -46,7 +46,7 @@ namespace Assets.Source.Systems
                 throw new ArgumentException("Top pos is not inside sprite sheet.");
 
             var voxelCount = new Vector2(voxelWidth, voxelHeight);
-            var voxelRel = new Vector2((float)voxelSize / (float)sheet.width, (float)voxelSize / (float)sheet.height);
+            var voxelRel = new Vector2((float)voxelSize / (float)sheetSizeX, (float)voxelSize / (float)sheetSizeY);
 
             var uv = new Vector2[24];
 
@@ -107,14 +107,14 @@ namespace Assets.Source.Systems
             return uv;
         }
 
-        public static Vector2[] GetVoxelUV(Texture2D sheet, int voxelSize, Vector2 pos, float offset = 0.01f)
+        public static Vector2[] GetVoxelUV(int sheetSizeX, int sheetSizeY, int voxelSize, Vector2 pos, float offset = 0f)
         {
-            if (!int.TryParse((sheet.width / voxelSize).ToString(), out int voxelWidth) || !int.TryParse((sheet.height / voxelSize).ToString(), out int voxelHeight))
+            if (!int.TryParse((sheetSizeX / voxelSize).ToString(), out int voxelWidth) || !int.TryParse((sheetSizeY / voxelSize).ToString(), out int voxelHeight))
                 throw new ArgumentException("Sheet size and voxel size do not divide equally.");
 
             var voxelCount = new Vector2(voxelWidth, voxelHeight);
 
-            var voxelRel = new Vector2((float)voxelSize / (float)sheet.width, (float)voxelSize / (float)sheet.height);
+            var voxelRel = new Vector2((float)voxelSize / (float)sheetSizeX, (float)voxelSize / (float)sheetSizeY);
             var voxelRelX = new Vector2(voxelRel.x, 0);
             var voxelRelY = new Vector2(0, voxelRel.y);
 

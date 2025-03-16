@@ -49,7 +49,7 @@ namespace Assets.Source.Systems
         public static (Vector3 newVelocity, Vector3[] normals) CollideVelocity(Bounds bounds, Vector3 position, Vector3 velocity, float offset)
         {
             var newVelocity = new Vector3(velocity.x, velocity.y, velocity.z);
-            (Vector3 vector, Vector3 normal)[] hits = GetCollisions(bounds, position, newVelocity * Time.fixedDeltaTime);
+            (Vector3 vector, Vector3 normal)[] hits = GetCollisions(bounds, position, newVelocity * Time.deltaTime);
 
             foreach ((Vector3 collisionVector, Vector3 collisionNormal) in hits)
             {

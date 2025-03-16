@@ -1,87 +1,161 @@
 using Assets.Source.Models;
 using Assets.Source.Systems;
+using Assets.Source.Systems.WorldGeneration;
 using Assets.Source.World.Objects;
+using Assets.Source.World.Prefabs;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using UnityEditor.PackageManager;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 public class GameSystem : MonoBehaviour
 {
     public static InGameObjectCollection LoadedObjects = new();
-    public static WorldData WorldData { get; private set; }
-    public static int WorldSize => 128;
-    public static int WorldHeight => 128;
-    public static int ChunkSize => 16;
-    public static bool Paused { get; set; } = false;
+    public static WorldData WorldData;
 
-    public static Chunk[] GetChunks()
+    public static GenerationSettings GenerationSettings { get; private set; }
+    public static bool Paused { get; set; } = false;
+    public static int RenderDistance { get; set; } = 3;
+
+    public static Dictionary<VoxelType, VoxelPrefab> VoxelPrefabs = new()
+    {
+        {
+            VoxelType.GRASS,
+            new VoxelPrefab()
+            {
+                TopTexPos = new Vector2(2, 0),
+                BottomTexPos = new Vector2(1, 0),
+                FrontTexPos = new Vector2(0, 0),
+                RightTexPos = new Vector2(0, 0),
+                BackTexPos = new Vector2(0, 0),
+                LeftTexPos = new Vector2(0, 0)
+            }
+        },
+        {
+            VoxelType.DIRT,
+            new VoxelPrefab()
+            {
+                TopTexPos = new Vector2(1, 0),
+                BottomTexPos = new Vector2(1, 0),
+                FrontTexPos = new Vector2(1, 0),
+                RightTexPos = new Vector2(1, 0),
+                BackTexPos = new Vector2(1, 0),
+                LeftTexPos = new Vector2(1, 0)
+            }
+        },
+        {
+            VoxelType.STONE,
+            new VoxelPrefab()
+            {
+                TopTexPos = new Vector2(3, 0),
+                BottomTexPos = new Vector2(3, 0),
+                FrontTexPos = new Vector2(3, 0),
+                RightTexPos = new Vector2(3, 0),
+                BackTexPos = new Vector2(3, 0),
+                LeftTexPos = new Vector2(3, 0)
+            }
+        },
+    };
+
+    private static Texture2D _standardTexture;
+    public static Texture2D StandardTexture
+    {
+        get => _standardTexture;
+        set
+        {
+            StandardTextureWidth = value.width;
+            StandardTextureHeight = value.height;
+            _standardTexture = value;
+        }
+    }
+    public static int StandardTextureWidth { get; private set; }
+    public static int StandardTextureHeight { get; private set; }
+
+    public static Location[] GetLoadedChunks()
     {
         var chunksObjs = LoadedObjects.Where(x => x.Name.StartsWith("chunk_"));
-        return chunksObjs.Cast<Chunk>().ToArray();
+        var chunks = chunksObjs.Cast<Chunk>().ToArray();
+        return chunks.Select(x => x.Location).ToArray();
     }
 
+    private Location? _lastChunkId = null;
+
     // Start is called before the first frame update
-    void Start()
+    async void Start()
     {
+        Texture.allowThreadedTextureCreation = true;
+        StandardTexture = TextureHelper.LoadFromImage(@"Assets\Textures\tile.png");
+
         transform.localPosition = new Vector3(0, 0, 0);
 
+        GenerationSettings = new GenerationSettings(128, 16, Random.Range(0, 10000), 1024, 1024);
+
         // INITIALISE WORLD
+        var generator = new Generator(GenerationSettings);
 
-        WorldData = new WorldData(WorldSize, WorldHeight, (int worldSize, int worldHeight) =>
-        {
-            var voxels = new Voxel[worldSize, worldHeight, worldSize];
-            for (int x = 0; x < worldSize; x++)
-            {
-                for (int z = 0; z < worldSize; z++)
-                {
-                    //int height = 5 + Random.Range(1, 4);
-                    //int height = 10;
-                    //int height = Mathf.Clamp((int)(Mathf.PerlinNoise(x, z) * (float)WorldHeight), 0, worldHeight);
-                    float perlin = Mathf.PerlinNoise((float)x / (float)worldSize, (float)z / (float)worldSize);
-                    float real = perlin * (float)WorldHeight;
-                    int height = Mathf.Clamp((int)real, 0, worldHeight);
-
-
-                    for (int y = 0; y < worldHeight; y++)
-                    {
-                        var location = new Location(x - worldSize / 2, y, z - worldSize / 2);
-                        if (y < height - 3)
-                            voxels[x,y,z] = new Voxel(location, VoxelType.STONE);
-                        else if (y < height)
-                            voxels[x,y,z] = new Voxel(location, VoxelType.DIRT);
-                        else if (y == height)
-                            voxels[x,y,z] = new Voxel(location, VoxelType.GRASS);
-                        else
-                            voxels[x,y,z] = new Voxel(location, VoxelType.VOID);
-                    }
-                }
-            }
-            return voxels;
-        });
-
-        WorldData.Generate();
-
-        int worldChunkSize = WorldSize / ChunkSize;
-
-        for (int cz = 0; cz < worldChunkSize; cz++)
-        {
-            for (int cx = 0; cx < worldChunkSize; cx++)
-            {
-                var chunk = new Chunk(new Location(cx - worldChunkSize / 2, 0, cz - worldChunkSize / 2));
-                chunk.SetParent(transform);
-                chunk.Name = $"chunk_{chunk.Name}";
-                LoadedObjects.Add(chunk);
-            }
-        }
+        WorldData = new WorldData(generator);
+        await WorldData.Generate(new Location(0, 0, 0), RenderDistance);
+        RegenChunks(new Location(0, 0, 0), transform);
 
         // INITIALISE PLAYER
 
         var player = new Player();
         player.SetParent(transform);
         player.Name = "Player";
-        player.Position = new Vector3(0, WorldHeight + 5, 0);
+        player.Position = new Vector3(0, GenerationSettings.WorldHeight + 1, 0);
+
+        player.OnPlayerMove += async (object sender, PlayerMoveEventArgs e) =>
+        {
+            Player movedPlayer = (Player)sender;
+            var newChunkId = WorldData.GetChunk(e.Current).Id;
+            if (_lastChunkId != newChunkId)
+            {
+                await WorldData.Generate(newChunkId, RenderDistance);
+                RegenChunks(newChunkId, transform);
+                _lastChunkId = newChunkId;
+            }
+        };
+
         LoadedObjects.Add(player);
+    }
+
+    private void RegenChunks(Location id, Transform parent)
+    {
+        (RealRange xRange, RealRange yRange) = WorldData.GetChunkLoadDistance(id, RenderDistance);
+
+        var newNames = new List<string>();
+        string format = "chunk_X,Z";
+        var currentChunkNames = LoadedObjects.Where(x => x.Name.StartsWith("chunk_")).Select(x => x.Name).ToList();
+        for (int cz = yRange.Start; cz < yRange.End; cz++)
+        {
+            for (int cx = xRange.Start; cx < xRange.End; cx++)
+            {
+                var location = new Location(cx, 0, cz);
+                string name = location.ToString(format);
+                if (currentChunkNames.Contains(name))
+                {
+                    newNames.Add(name);
+                }
+                else
+                {
+                    var chunk = new Chunk(location);
+                    chunk.SetParent(parent);
+                    chunk.Name = location.ToString(format);
+                    LoadedObjects.Add(chunk);
+                    newNames.Add(name);
+                }
+            }
+        }
+
+        currentChunkNames.RemoveAll(x => newNames.Contains(x));
+        foreach (var chunk in currentChunkNames)
+        {
+            LoadedObjects.Remove(chunk);
+        }
     }
 
     // Update is called once per frame

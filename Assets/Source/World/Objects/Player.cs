@@ -16,6 +16,8 @@ namespace Assets.Source.World.Objects
     {
         public GameObject Camera { get; private set; } = new GameObject();
 
+        public Location Location => Location.ClampVector(GameObject.transform.position);
+
         public Player()
         {
 
@@ -47,7 +49,7 @@ namespace Assets.Source.World.Objects
         protected override void OnStart()
         {
             GameObject.layer = LayerMask.NameToLayer("Ignore Raycast");
-            Gravity = 1f;
+            Gravity = 24f;
 
             Camera.tag = "MainCamera";
             Camera.name = "Camera";
@@ -57,7 +59,7 @@ namespace Assets.Source.World.Objects
         }
 
         private int _updateTimeCount = 0;
-        private bool _updateTime => _updateTimeCount >= 1f / Time.fixedDeltaTime;
+        private bool _updateTime => _updateTimeCount >= 1f / Time.deltaTime;
 
         private Vector3 _lastMouse = new Vector3(-1, -1, -1);
 
@@ -65,23 +67,8 @@ namespace Assets.Source.World.Objects
 
         protected override void OnUpdate()
         {
-            //Rotation = new Quaternion(0, Rotation.y, 0, 0);
-
             if (!GameSystem.Paused)
             {
-                //if (_lastMouse == new Vector3(-1, -1, -1))
-                //    _lastMouse = Input.mousePosition;
-
-                //if (_lastMouse != Input.mousePosition)
-                //{
-                //    var diff = Input.mousePosition - _lastMouse;
-                //    var camRot = Camera.gameObject.transform.rotation;
-                //    //Camera.gameObject.transform.rotation = new Quaternion(camRot.x + diff.y, camRot.y, camRot.z, camRot.w);
-                //    //Rotation = new Quaternion(Rotation.x, Rotation.y + diff.x, Rotation.z, Rotation.w);
-
-                //    _lastMouse = Input.mousePosition;
-                //}
-
                 Vector2 mouseY = new Vector2(-Input.GetAxis("Mouse Y") * _sensitivity, 0);
                 Vector2 mouseX = new Vector2(0, Input.GetAxis("Mouse X") * _sensitivity);
 
@@ -94,14 +81,14 @@ namespace Assets.Source.World.Objects
 
                 Cursor.lockState = CursorLockMode.Locked;
                 Cursor.lockState = CursorLockMode.Confined;
-                //Cursor.visible = false;
+                Cursor.visible = false;
 
                 Camera.transform.eulerAngles = Look;
             }
             else
             {
                 Cursor.lockState = CursorLockMode.None;
-                //Cursor.visible = true;
+                Cursor.visible = true;
             }
             
 
@@ -113,10 +100,11 @@ namespace Assets.Source.World.Objects
             }
         }
 
-        private float _movementSpeed = 1f;
-        private float _jumpPower = 4f;
+        private float _movementSpeed = 30f;
+        private float _jumpPower = 13f;
 
         private Vector3[] _normals = new Vector3[0];
+        private Location? _lastLocation = null;
 
         protected override (Vector3 position, Vector3 velocity) CalculateMovement()
         {
@@ -130,13 +118,13 @@ namespace Assets.Source.World.Objects
             IsGrounded = _normals.Contains(Vector3.up);
 
             if (keys.Contains(KeyCode.W))
-                newVelocity += Vector3.ClampMagnitude(Vector3.Scale(Front * _movementSpeed, new Vector3(1, 0, 1)) * Time.fixedDeltaTime, _movementSpeed);
+                newVelocity += Vector3.ClampMagnitude(Vector3.Scale(Front * _movementSpeed, new Vector3(1, 0, 1)) * Time.deltaTime, _movementSpeed);
             if (keys.Contains(KeyCode.A))
-                newVelocity += Vector3.ClampMagnitude(Vector3.Scale(Left * _movementSpeed, new Vector3(1, 0, 1)) * Time.fixedDeltaTime, _movementSpeed);
+                newVelocity += Vector3.ClampMagnitude(Vector3.Scale(Left * _movementSpeed, new Vector3(1, 0, 1)) * Time.deltaTime, _movementSpeed);
             if (keys.Contains(KeyCode.S))
-                newVelocity += Vector3.ClampMagnitude(Vector3.Scale(Back * _movementSpeed, new Vector3(1, 0, 1)) * Time.fixedDeltaTime, _movementSpeed);
+                newVelocity += Vector3.ClampMagnitude(Vector3.Scale(Back * _movementSpeed, new Vector3(1, 0, 1)) * Time.deltaTime, _movementSpeed);
             if (keys.Contains(KeyCode.D))
-                newVelocity += Vector3.ClampMagnitude(Vector3.Scale(Right * _movementSpeed, new Vector3(1, 0, 1)) * Time.fixedDeltaTime, _movementSpeed);
+                newVelocity += Vector3.ClampMagnitude(Vector3.Scale(Right * _movementSpeed, new Vector3(1, 0, 1)) * Time.deltaTime, _movementSpeed);
             if (keys.Contains(KeyCode.Space))
             {
                 if (IsGrounded)
@@ -149,7 +137,20 @@ namespace Assets.Source.World.Objects
 
             (newVelocity, _normals) = PhysicsHelper.CollideVelocity(Renderer.bounds, Position, newVelocity, 0.00001f);
 
-            return (Position + newVelocity * Time.fixedDeltaTime, newVelocity);
+            Vector3 newPosition = Position + newVelocity * Time.deltaTime;
+            var newLocation = Location.ClampVector(newPosition);
+
+            if (newLocation != _lastLocation)
+            {
+                if (_lastLocation != null)
+                {
+                    // Player has moved to a new block
+                    OnPlayerMove?.Invoke(this, new PlayerMoveEventArgs(_lastLocation.Value, Location));
+                }
+                _lastLocation = newLocation;
+            }
+
+            return (newPosition, newVelocity);
         }
 
         protected override void OnTriggerEnter(Collider collider)
@@ -161,6 +162,20 @@ namespace Assets.Source.World.Objects
         protected override void OnCollisionExit(Collision collision)
         {
 
+        }
+
+        public EventHandler<PlayerMoveEventArgs> OnPlayerMove;
+    }
+
+    public class PlayerMoveEventArgs : EventArgs
+    {
+        public Location Last;
+        public Location Current;
+
+        public PlayerMoveEventArgs(Location last, Location current)
+        {
+            Current = current;
+            Last = last;
         }
     }
 }
