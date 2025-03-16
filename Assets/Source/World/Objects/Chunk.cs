@@ -99,7 +99,7 @@ namespace Assets.Source.World.Objects
 
                         */
 
-                        if (voxelD == null || voxelD.Type == VoxelType.VOID)
+                        if (voxelD != null && voxelD.Type == VoxelType.VOID)
                         {
                             // DOWN FACE
                             vertices.Add(new Vector3(x + 0, y - 1, z + 0));
@@ -113,7 +113,7 @@ namespace Assets.Source.World.Objects
                             uv.AddRange(prefab.GetVoxelUV(VoxelFace.BOTTOM, GameSystem.StandardTextureWidth, GameSystem.StandardTextureHeight));
                         }
 
-                        if (voxelU == null || voxelU.Type == VoxelType.VOID)
+                        if (voxelU != null && voxelU.Type == VoxelType.VOID)
                         {
                             // UP FACE
                             vertices.Add(new Vector3(x + 0, y + 0, z + 1));
@@ -127,7 +127,7 @@ namespace Assets.Source.World.Objects
                             uv.AddRange(prefab.GetVoxelUV(VoxelFace.TOP, GameSystem.StandardTextureWidth, GameSystem.StandardTextureHeight));
                         }
 
-                        if (voxelL == null || voxelL.Type == VoxelType.VOID)
+                        if (voxelL != null && voxelL.Type == VoxelType.VOID)
                         {
                             // LEFT FACE
                             vertices.Add(new Vector3(x + 0, y + 0, z + 1));
@@ -141,7 +141,7 @@ namespace Assets.Source.World.Objects
                             uv.AddRange(prefab.GetVoxelUV(VoxelFace.LEFT, GameSystem.StandardTextureWidth, GameSystem.StandardTextureHeight));
                         }
 
-                        if (voxelR == null || voxelR.Type == VoxelType.VOID)
+                        if (voxelR != null && voxelR.Type == VoxelType.VOID)
                         {
                             // RIGHT FACE
                             vertices.Add(new Vector3(x + 1, y + 0, z + 0));
@@ -155,7 +155,7 @@ namespace Assets.Source.World.Objects
                             uv.AddRange(prefab.GetVoxelUV(VoxelFace.RIGHT, GameSystem.StandardTextureWidth, GameSystem.StandardTextureHeight));
                         }
 
-                        if (voxelB == null || voxelB.Type == VoxelType.VOID)
+                        if (voxelB != null && voxelB.Type == VoxelType.VOID)
                         {
                             // BACK FACE
                             vertices.Add(new Vector3(x + 0, y + 0, z + 0));
@@ -169,7 +169,7 @@ namespace Assets.Source.World.Objects
                             uv.AddRange(prefab.GetVoxelUV(VoxelFace.BACK, GameSystem.StandardTextureWidth, GameSystem.StandardTextureHeight));
                         }
 
-                        if (voxelF == null || voxelF.Type == VoxelType.VOID)
+                        if (voxelF != null && voxelF.Type == VoxelType.VOID)
                         {
                             // FRONT FACE
                             vertices.Add(new Vector3(x + 1, y + 0, z + 1));
