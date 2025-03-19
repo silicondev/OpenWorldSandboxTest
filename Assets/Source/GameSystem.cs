@@ -1,5 +1,6 @@
 using Assets.Source.Models;
 using Assets.Source.Systems;
+using Assets.Source.Systems.Abstracts;
 using Assets.Source.Systems.WorldGeneration;
 using Assets.Source.World.Objects;
 using Assets.Source.World.Prefabs;
@@ -79,7 +80,7 @@ public class GameSystem : MonoBehaviour
     {
         var chunksObjs = LoadedObjects.Where(x => x.Name.StartsWith("chunk_"));
         var chunks = chunksObjs.Cast<Chunk>().ToArray();
-        return chunks.Select(x => x.Location).ToArray();
+        return chunks.Select(x => x.Id).ToArray();
     }
 
     private Location? _lastChunkId = null;
@@ -98,13 +99,13 @@ public class GameSystem : MonoBehaviour
         var generator = new Generator(GenerationSettings);
 
         WorldData = new WorldData(generator);
-        await WorldData.Generate(new Location(0, 0, 0), RenderDistance);
-        RegenChunks(new Location(0, 0, 0), transform);
+        await WorldData.Generate(new Location(0, 0, 0), RenderDistance + 2);
+        RegenChunks(new Location(0, 0, 0));
 
         // INITIALISE PLAYER
 
         var player = new Player();
-        player.SetParent(transform);
+        AddChild(player);
         player.Name = "Player";
         player.Position = new Vector3(0, GenerationSettings.WorldHeight + 1, 0);
 
@@ -114,8 +115,8 @@ public class GameSystem : MonoBehaviour
             var newChunkId = WorldData.GetChunk(e.Current).Id;
             if (_lastChunkId != newChunkId)
             {
-                await WorldData.Generate(newChunkId, RenderDistance);
-                RegenChunks(newChunkId, transform);
+                await WorldData.Generate(newChunkId, RenderDistance + 2);
+                RegenChunks(newChunkId);
                 _lastChunkId = newChunkId;
             }
         };
@@ -123,16 +124,16 @@ public class GameSystem : MonoBehaviour
         LoadedObjects.Add(player);
     }
 
-    private void RegenChunks(Location id, Transform parent)
+    private void RegenChunks(Location id)
     {
         (RealRange xRange, RealRange yRange) = WorldData.GetChunkLoadDistance(id, RenderDistance);
 
         var newNames = new List<string>();
         string format = "chunk_X,Z";
         var currentChunkNames = LoadedObjects.Where(x => x.Name.StartsWith("chunk_")).Select(x => x.Name).ToList();
-        for (int cz = yRange.Start; cz < yRange.End; cz++)
+        for (int cz = yRange.Start; cz <= yRange.End; cz++)
         {
-            for (int cx = xRange.Start; cx < xRange.End; cx++)
+            for (int cx = xRange.Start; cx <= xRange.End; cx++)
             {
                 var location = new Location(cx, 0, cz);
                 string name = location.ToString(format);
@@ -143,8 +144,8 @@ public class GameSystem : MonoBehaviour
                 else
                 {
                     var chunk = new Chunk(location);
-                    chunk.SetParent(parent);
-                    chunk.Name = location.ToString(format);
+                    AddChild(chunk);
+                    chunk.Name = name;
                     LoadedObjects.Add(chunk);
                     newNames.Add(name);
                 }
@@ -169,6 +170,6 @@ public class GameSystem : MonoBehaviour
         LoadedObjects.Clear();
     }
 
-    public void AddChild(GameObject obj) =>
-        obj.transform.SetParent(transform);
+    public void AddChild(InGameObject obj) =>
+        obj.SetParent(transform);
 }

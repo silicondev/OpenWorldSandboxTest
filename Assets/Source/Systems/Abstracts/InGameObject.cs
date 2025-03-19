@@ -97,14 +97,10 @@ namespace Assets.Source.Systems.Abstracts
             var obj = new GameObject();
             obj.AddComponent<MeshRenderer>();
             obj.AddComponent<MeshFilter>();
-            obj.AddComponent<MeshCollider>();
 
             obj.GetComponent<Renderer>().material.color = Color.white;
-            obj.GetComponent<MeshCollider>().convex = false;
 
             Build(obj);
-
-            obj.GetComponent<MeshCollider>().sharedMesh = obj.GetComponent<MeshFilter>().mesh;
 
             obj.name = Guid.NewGuid().ToString();
             if (_parent != null)

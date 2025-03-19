@@ -52,9 +52,9 @@ namespace Assets.Source.Systems.WorldGeneration
         public Voxel GetBlock(Location l)
         {
             //var arrayLocation = l + new Location(_generator.Settings.WorldSize.x / 2, 0, _generator.Settings.WorldSize.y / 2);
-            var arrayLocation = l - (Id * _generator.Settings.ChunkSize);
+            Location arrayLocation = l - (Id * _generator.Settings.ChunkSize);
 
-            if (Voxels == null ||
+            if (arrayLocation == null || Voxels == null ||
                 arrayLocation.X >= Width || arrayLocation.X < 0 ||
                 arrayLocation.Z >= Depth || arrayLocation.Z < 0 ||
                 arrayLocation.Y >= Height || arrayLocation.Y < 0)

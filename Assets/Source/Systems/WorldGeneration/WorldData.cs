@@ -67,15 +67,21 @@ namespace Assets.Source.Systems.WorldGeneration
                     var location = new Location(x, 0, z);
                     if (firstGen || GetChunkFromId(location) == null)
                     {
-                        int ax = x + generator.Settings.WorldSizeChunks.x / 2;
-                        int az = z + generator.Settings.WorldSizeChunks.y / 2;
+                        //int ax = x + generator.Settings.WorldSizeChunks.x / 2;
+                        //int az = z + generator.Settings.WorldSizeChunks.y / 2;
 
-                        if (ax > 0 && ax < generator.Settings.WorldSizeChunks.x &&
-                            az > 0 && az < generator.Settings.WorldSizeChunks.y)
-                        {
-                            Chunks[ax, az] = new ChunkData(location, generator);
-                            await Chunks[ax, az].Generate();
-                        }
+                        //if (ax > 0 && ax < generator.Settings.WorldSizeChunks.x &&
+                        //    az > 0 && az < generator.Settings.WorldSizeChunks.y)
+                        //{
+                        //    Chunks[ax, az] = new ChunkData(location, generator);
+                        //    await Chunks[ax, az].Generate();
+                        //}
+
+                        Index ax = x.ToIndex();
+                        Index az = z.ToIndex();
+
+                        Chunks.Set(ax, az, new ChunkData(location, generator));
+                        await Chunks.Get(ax, az).Generate();
                     }
                 }
             }
@@ -83,27 +89,45 @@ namespace Assets.Source.Systems.WorldGeneration
 
         public ChunkData GetChunk(Location l)
         {
-            var arrayWorldPos = l + new Location(_generator.Settings.WorldSize.x / 2, 0, _generator.Settings.WorldSize.y / 2);
-            var id = arrayWorldPos / _generator.Settings.ChunkSize;
+            //var arrayWorldPos = l + new Location(_generator.Settings.WorldSize.x / 2, 0, _generator.Settings.WorldSize.y / 2);
+            //var id = arrayWorldPos / _generator.Settings.ChunkSize;
 
-            if (Chunks == null ||
-                id.X < 0 || id.X >= Chunks.GetLength(0) ||
-                id.Z < 0 || id.Z >= Chunks.GetLength(1))
-                return null;
+            //if (Chunks == null ||
+            //    id.X < 0 || id.X >= Chunks.GetLength(0) ||
+            //    id.Z < 0 || id.Z >= Chunks.GetLength(1))
+            //    return null;
 
-            return Chunks[id.X, id.Z];
+            //return Chunks[id.X, id.Z];
+
+            //var id = l / _generator.Settings.ChunkSize;
+            var id = new Location((int)(Math.Floor((float)l.X / (float)_generator.Settings.ChunkSize)), 0, (int)(Math.Floor((float)l.Z / (float)_generator.Settings.ChunkSize)));
+
+            return GetChunkFromId(id);
         }
 
         public ChunkData GetChunkFromId(Location id)
         {
-            var arrayId = id + new Location(_generator.Settings.WorldSizeChunks.x / 2, 0, _generator.Settings.WorldSizeChunks.y / 2);
+            //var arrayId = id + new Location(_generator.Settings.WorldSizeChunks.x / 2, 0, _generator.Settings.WorldSizeChunks.y / 2);
+
+            //if (Chunks == null ||
+            //    arrayId.X < 0 || arrayId.X >= Chunks.GetLength(0) ||
+            //    arrayId.Z < 0 || arrayId.Z >= Chunks.GetLength(1))
+            //    return null;
+
+            //return Chunks[arrayId.X, arrayId.Z];
+
+            Index x = id.X.ToIndex();
+            Index z = id.Z.ToIndex();
+
+            int realX = x.GetIndex(Chunks.GetLength(0));
+            int realZ = z.GetIndex(Chunks.GetLength(1));
 
             if (Chunks == null ||
-                arrayId.X < 0 || arrayId.X >= Chunks.GetLength(0) ||
-                arrayId.Z < 0 || arrayId.Z >= Chunks.GetLength(1))
+                realX < 0 || realX > Chunks.GetLength(0) ||
+                realZ < 0 || realZ > Chunks.GetLength(1))
                 return null;
 
-            return Chunks[arrayId.X, arrayId.Z];
+            return Chunks.Get(x, z);
         }
 
         public Voxel GetBlock(Vector3 vector) =>

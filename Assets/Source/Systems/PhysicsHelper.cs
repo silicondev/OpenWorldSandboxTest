@@ -78,5 +78,16 @@ namespace Assets.Source.Systems
 
             return (newVelocity, hits.Select(x => x.normal).ToArray());
         }
+
+        public static Vector3[] Vector3Between(Vector3 a, Vector3 b, int count)
+        {
+            var list = new List<Vector3>();
+            Vector3 difference = (a - b) / count;
+            for (int i = 1; i <= count; i++)
+            {
+                list.Add(a + (difference * i));
+            }
+            return list.ToArray();
+        }
     }
 }

@@ -51,8 +51,25 @@ namespace Assets.Source.Models
         public static bool operator !=(Location a, Location b) => !a.Equals(b);
         public override string ToString() => $"{X},{Y},{Z}";
 
-        public string ToString(string format) => format.Replace("X", X.ToString()).Replace("Y", Y.ToString()).Replace("Z", Z.ToString());
+        public string ToString(string format)
+        {
+            if (string.IsNullOrEmpty(format))
+                format = "X,Y,Z";
+
+            return format.Replace("X", X.ToString()).Replace("Y", Y.ToString()).Replace("Z", Z.ToString());
+        }
 
         public string ToString(string format, IFormatProvider formatProvider) => ToString(format);
+
+        public Location[] RangeCombineLocation(Location[] locations) =>
+            RangeCombineVector(locations.Select(x => x.ToVector3()).ToArray()).Select(x => ClampVector(x)).ToArray();
+
+        public Vector3[] RangeCombineVector(Vector3[] vectors)
+        {
+            var list = new List<Vector3>();
+            foreach (var vector in vectors)
+                list.Add(vector + ToVector3());
+            return list.ToArray();
+        }
     }
 }

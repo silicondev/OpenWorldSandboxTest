@@ -39,8 +39,6 @@ namespace Assets.Source.World.Objects
             var newObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
             obj.GetComponent<MeshFilter>().mesh = newObj.GetComponent<MeshFilter>().mesh;
             obj.GetComponent<Renderer>().material = newObj.GetComponent<Renderer>().material;
-            obj.GetComponent<MeshCollider>().convex = true;
-            obj.GetComponent<MeshCollider>().isTrigger = true;
             obj.transform.localScale = new Vector3(0.75f, 1.8f, 0.75f);
 
             GameObject.Destroy(newObj);
@@ -50,6 +48,7 @@ namespace Assets.Source.World.Objects
         {
             GameObject.layer = LayerMask.NameToLayer("Ignore Raycast");
             Gravity = 24f;
+            //Gravity = 0f;
 
             Camera.tag = "MainCamera";
             Camera.name = "Camera";
@@ -135,7 +134,7 @@ namespace Assets.Source.World.Objects
             if (keys.Contains(KeyCode.Escape))
                 GameSystem.Paused = !GameSystem.Paused;
 
-            (newVelocity, _normals) = PhysicsHelper.CollideVelocity(Renderer.bounds, Position, newVelocity, 0.00001f);
+            (newVelocity, _normals) = PhysicsHelper.CollideVelocity(Renderer.bounds, Position, newVelocity, 0.0001f);
 
             Vector3 newPosition = Position + newVelocity * Time.deltaTime;
             var newLocation = Location.ClampVector(newPosition);

@@ -78,32 +78,42 @@ namespace Assets.Source.Models
         public BoundingBox Copy() =>
             new BoundingBox(TopFrontRight, TopFrontLeft, TopRearRight, TopRearLeft, BottomFrontRight, BottomFrontLeft, BottomRearRight, BottomRearLeft);
 
-        public void DrawDebugLines(Color color)
+        public void DrawDebugLines(Color color, bool full = true, float duration = 0f)
         {
-            Debug.DrawLine(TopFrontRight, TopFrontLeft, color);
-            Debug.DrawLine(TopFrontRight, TopRearRight, color);
-            Debug.DrawLine(TopFrontRight, BottomFrontRight, color);
-            Debug.DrawLine(TopFrontLeft, TopRearLeft, color);
-            Debug.DrawLine(TopFrontLeft, BottomFrontLeft, color);
-            Debug.DrawLine(TopRearLeft, TopRearRight, color);
-            Debug.DrawLine(TopRearLeft, BottomRearLeft, color);
-            Debug.DrawLine(TopRearRight, BottomRearRight, color);
-            Debug.DrawLine(BottomFrontRight, BottomFrontLeft, color);
-            Debug.DrawLine(BottomFrontLeft, BottomRearLeft, color);
-            Debug.DrawLine(BottomRearLeft, BottomRearRight, color);
-            Debug.DrawLine(BottomRearRight, BottomFrontRight, color);
+            if (full)
+            {
+                Debug.DrawLine(TopFrontRight, TopFrontLeft, color, duration);
+                Debug.DrawLine(TopFrontRight, TopRearRight, color, duration);
+                Debug.DrawLine(TopFrontRight, BottomFrontRight, color, duration);
+                Debug.DrawLine(TopFrontLeft, TopRearLeft, color, duration);
+                Debug.DrawLine(TopFrontLeft, BottomFrontLeft, color, duration);
+                Debug.DrawLine(TopRearLeft, TopRearRight, color, duration);
+                Debug.DrawLine(TopRearLeft, BottomRearLeft, color, duration);
+                Debug.DrawLine(TopRearRight, BottomRearRight, color, duration);
+                Debug.DrawLine(BottomFrontRight, BottomFrontLeft, color, duration);
+                Debug.DrawLine(BottomFrontLeft, BottomRearLeft, color, duration);
+                Debug.DrawLine(BottomRearLeft, BottomRearRight, color, duration);
+                Debug.DrawLine(BottomRearRight, BottomFrontRight, color, duration);
+            }
+            else
+            {
+                Debug.DrawLine(TopFrontRight, BottomRearLeft, color, duration);
+                Debug.DrawLine(TopFrontLeft, BottomRearRight, color, duration);
+                Debug.DrawLine(TopRearRight, BottomFrontLeft, color, duration);
+                Debug.DrawLine(TopRearLeft, BottomFrontRight, color, duration);
+            }
         }
 
-        public void DrawDebugLines(Color color, Vector3 point)
+        public void DrawDebugLines(Color color, Vector3 point, float duration = 0f)
         {
-            Debug.DrawLine(TopFrontRight, point, color);
-            Debug.DrawLine(TopFrontLeft, point, color);
-            Debug.DrawLine(TopRearRight, point, color);
-            Debug.DrawLine(TopRearLeft, point, color);
-            Debug.DrawLine(BottomFrontRight, point, color);
-            Debug.DrawLine(BottomFrontLeft, point, color);
-            Debug.DrawLine(BottomRearRight, point, color);
-            Debug.DrawLine(BottomRearLeft, point, color);
+            Debug.DrawLine(TopFrontRight, point, color, duration);
+            Debug.DrawLine(TopFrontLeft, point, color, duration);
+            Debug.DrawLine(TopRearRight, point, color, duration);
+            Debug.DrawLine(TopRearLeft, point, color, duration);
+            Debug.DrawLine(BottomFrontRight, point, color, duration);
+            Debug.DrawLine(BottomFrontLeft, point, color, duration);
+            Debug.DrawLine(BottomRearRight, point, color, duration);
+            Debug.DrawLine(BottomRearLeft, point, color, duration);
         }
 
         public Vector3[] LeastCombinedDistanceFace(Vector3 point)
@@ -133,11 +143,19 @@ namespace Assets.Source.Models
         {
             var list = new List<(Vector3 origin, RaycastHit hit)>();
 
-            var dirX = new Vector3(direction.x, 0, 0);
-            var dirY = new Vector3(0, direction.y, 0);
-            var dirZ = new Vector3(0, 0, direction.z);
+            var dirX = new Vector3(direction.x / Time.deltaTime, 0, 0);
+            var dirY = new Vector3(0, direction.y / Time.deltaTime, 0);
+            var dirZ = new Vector3(0, 0, direction.z / Time.deltaTime);
 
-            var vertices = new Vector3[] { TopFrontRight, TopFrontLeft, TopRearRight, TopRearLeft, BottomFrontRight, BottomFrontLeft, BottomRearRight, BottomRearLeft };
+            var vertices = new List<Vector3>()
+            {
+                // Corners
+                TopFrontRight, TopFrontLeft, TopRearRight, TopRearLeft, BottomFrontRight, BottomFrontLeft, BottomRearRight, BottomRearLeft
+            };
+            vertices.AddRange(PhysicsHelper.Vector3Between(TopFrontRight, BottomFrontRight, 3));
+            vertices.AddRange(PhysicsHelper.Vector3Between(TopFrontLeft, BottomFrontLeft, 3));
+            vertices.AddRange(PhysicsHelper.Vector3Between(TopRearRight, BottomRearRight, 3));
+            vertices.AddRange(PhysicsHelper.Vector3Between(TopRearLeft, BottomRearLeft, 3));
 
             foreach (var vertex in vertices)
             {
@@ -154,7 +172,7 @@ namespace Assets.Source.Models
                 Debug.DrawLine(item.origin, item.hit.point, Color.blue);
             }
 
-            return list.ToArray();
+            return list.Where(x => x.hit.distance <= Vector3.Distance(Vector3.zero, direction)).ToArray();
         }
 
         public (Vector3? origin, RaycastHit? hit) RaycastMin(Vector3 direction)
