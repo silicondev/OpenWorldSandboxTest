@@ -89,5 +89,8 @@ namespace Assets.Source.Systems
             }
             return list.ToArray();
         }
+
+        public static Vector3 GetVectorMidpoint(Vector3 a, Vector3 b) =>
+            b + ((a - b) / 2f);
     }
 }

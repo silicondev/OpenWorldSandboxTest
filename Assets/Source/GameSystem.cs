@@ -60,21 +60,19 @@ public class GameSystem : MonoBehaviour
                 LeftTexPos = new Vector2(3, 0)
             }
         },
-    };
-
-    private static Texture2D _standardTexture;
-    public static Texture2D StandardTexture
-    {
-        get => _standardTexture;
-        set
         {
-            StandardTextureWidth = value.width;
-            StandardTextureHeight = value.height;
-            _standardTexture = value;
+            VoxelType.PLANKS,
+            new VoxelPrefab()
+            {
+                TopTexPos = new Vector2(4, 0),
+                BottomTexPos = new Vector2(4, 0),
+                FrontTexPos = new Vector2(4, 0),
+                RightTexPos = new Vector2(4, 0),
+                BackTexPos = new Vector2(4, 0),
+                LeftTexPos = new Vector2(4, 0)
+            }
         }
-    }
-    public static int StandardTextureWidth { get; private set; }
-    public static int StandardTextureHeight { get; private set; }
+    };
 
     public static Location[] GetLoadedChunks()
     {
@@ -89,7 +87,9 @@ public class GameSystem : MonoBehaviour
     async void Start()
     {
         Texture.allowThreadedTextureCreation = true;
-        StandardTexture = TextureHelper.LoadFromImage(@"Assets\Textures\tile.png");
+
+        TextureHelper.Textures.Add(TextureSheet.TILES, new SpriteTexture(TextureHelper.LoadFromImage(@"Assets\Textures\tile.png"), 8));
+        TextureHelper.Textures.Add(TextureSheet.HUD, new SpriteTexture(TextureHelper.LoadFromImage(@"Assets\Textures\hud.png"), 8));
 
         transform.localPosition = new Vector3(0, 0, 0);
 
@@ -122,6 +122,10 @@ public class GameSystem : MonoBehaviour
         };
 
         LoadedObjects.Add(player);
+
+        var hud = new HUD(player.Camera.GameObject.GetComponent<Camera>());
+        hud.Name = "HUD";
+        LoadedObjects.Add(hud);
     }
 
     public static void RegenChunk(Location id)
@@ -131,13 +135,6 @@ public class GameSystem : MonoBehaviour
         {
             chunk.Regenerate();
         }
-    }
-
-    public static void DrawBlockLines(Location blockLocation)
-    {
-        var chunkId = WorldData.GetChunk(blockLocation).Id;
-        var chunk = (Chunk)LoadedObjects.FirstOrDefault(x => x.Name == chunkId.ToString("chunk_X,Z"));
-        chunk.DrawLines(blockLocation);
     }
 
     private void RegenChunks(Location id, int distance = 0)

@@ -18,6 +18,8 @@ namespace Assets.Source.World.Objects
     {
         public Location Id { get; }
 
+        private SpriteTexture _spriteTexture = null;
+
         #region Faces
         private readonly Vector3[] _downFace = new Vector3[]
         {
@@ -63,6 +65,7 @@ namespace Assets.Source.World.Objects
 
         protected override async void Build(GameObject obj)
         {
+            _spriteTexture = TextureHelper.Textures[TextureSheet.TILES];
             (Vector3[] vertices, int[] triangles, Vector2[] uv) = await GetMeshData();
 
             var mesh = new Mesh();
@@ -75,14 +78,11 @@ namespace Assets.Source.World.Objects
                 return;
 
             obj.GetComponent<MeshFilter>().mesh = mesh;
-            obj.GetComponent<Renderer>().material.SetTexture("_MainTex", GameSystem.StandardTexture);
+            obj.GetComponent<Renderer>().material.SetTexture("_MainTex", _spriteTexture.Texture2D);
 
             obj.AddComponent<MeshCollider>();
             obj.GetComponent<MeshCollider>().sharedMesh = mesh;
             obj.GetComponent<MeshCollider>().convex = false;
-
-            obj.AddComponent<LineRenderer>();
-            obj.GetComponent<LineRenderer>().enabled = true;
 
             obj.transform.position = (Id * GameSystem.GenerationSettings.ChunkSize).ToVector3() + new Vector3(-1, 0, -1);
         }
@@ -98,15 +98,6 @@ namespace Assets.Source.World.Objects
             mesh.RecalculateNormals();
             GameObject.GetComponent<MeshFilter>().mesh = mesh;
             GameObject.GetComponent<MeshCollider>().sharedMesh = mesh;
-        }
-
-        public void DrawLines(Location blockLocation)
-        {
-            var renderer = GameObject.GetComponent<LineRenderer>();
-
-            var block = GameSystem.WorldData.GetBlock(blockLocation);
-            var box = block.GetBox();
-            box.DrawLines(renderer, Color.red, 0.1f);
         }
 
         private Task<(Vector3[] vertices, int[] triangles, Vector2[] uv)> GetMeshData() => Task.Factory.StartNew(() =>
@@ -173,42 +164,42 @@ namespace Assets.Source.World.Objects
                             {
                                 // DOWN FACE
                                 vertices.AddRange(cLoc.RangeCombineVector(_downFace));
-                                uv.AddRange(prefab.GetVoxelUV(VoxelFace.BOTTOM, GameSystem.StandardTextureWidth, GameSystem.StandardTextureHeight));
+                                uv.AddRange(prefab.GetVoxelUV(VoxelFace.BOTTOM, _spriteTexture.Width, _spriteTexture.Height, _spriteTexture.SpriteSize));
                             }
 
                             if (voxelU != null && voxelU.Type == VoxelType.VOID)
                             {
                                 // UP FACE
                                 vertices.AddRange(cLoc.RangeCombineVector(_upFace));
-                                uv.AddRange(prefab.GetVoxelUV(VoxelFace.TOP, GameSystem.StandardTextureWidth, GameSystem.StandardTextureHeight));
+                                uv.AddRange(prefab.GetVoxelUV(VoxelFace.TOP, _spriteTexture.Width, _spriteTexture.Height, _spriteTexture.SpriteSize));
                             }
 
                             if (voxelL != null && voxelL.Type == VoxelType.VOID)
                             {
                                 // LEFT FACE
                                 vertices.AddRange(cLoc.RangeCombineVector(_leftFace));
-                                uv.AddRange(prefab.GetVoxelUV(VoxelFace.LEFT, GameSystem.StandardTextureWidth, GameSystem.StandardTextureHeight));
+                                uv.AddRange(prefab.GetVoxelUV(VoxelFace.LEFT, _spriteTexture.Width, _spriteTexture.Height, _spriteTexture.SpriteSize));
                             }
 
                             if (voxelR != null && voxelR.Type == VoxelType.VOID)
                             {
                                 // RIGHT FACE
                                 vertices.AddRange(cLoc.RangeCombineVector(_rightFace));
-                                uv.AddRange(prefab.GetVoxelUV(VoxelFace.RIGHT, GameSystem.StandardTextureWidth, GameSystem.StandardTextureHeight));
+                                uv.AddRange(prefab.GetVoxelUV(VoxelFace.RIGHT, _spriteTexture.Width, _spriteTexture.Height, _spriteTexture.SpriteSize));
                             }
 
                             if (voxelB != null && voxelB.Type == VoxelType.VOID)
                             {
                                 // BACK FACE
                                 vertices.AddRange(cLoc.RangeCombineVector(_backFace));
-                                uv.AddRange(prefab.GetVoxelUV(VoxelFace.BACK, GameSystem.StandardTextureWidth, GameSystem.StandardTextureHeight));
+                                uv.AddRange(prefab.GetVoxelUV(VoxelFace.BACK, _spriteTexture.Width, _spriteTexture.Height, _spriteTexture.SpriteSize));
                             }
 
                             if (voxelF != null && voxelF.Type == VoxelType.VOID)
                             {
                                 // FRONT FACE
                                 vertices.AddRange(cLoc.RangeCombineVector(_frontFace));
-                                uv.AddRange(prefab.GetVoxelUV(VoxelFace.FRONT, GameSystem.StandardTextureWidth, GameSystem.StandardTextureHeight));
+                                uv.AddRange(prefab.GetVoxelUV(VoxelFace.FRONT, _spriteTexture.Width, _spriteTexture.Height, _spriteTexture.SpriteSize));
                             }
                         }
                     }

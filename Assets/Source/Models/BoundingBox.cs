@@ -129,9 +129,10 @@ namespace Assets.Source.Models
             });
 
             renderer.startColor = color;
-            renderer.endColor = color;
+            //renderer.endColor = color;
             renderer.startWidth = width;
-            renderer.endWidth = width;
+            //renderer.endWidth = width;
+            renderer.widthMultiplier = 1f;
         }
 
         public void DrawDebugLines(Color color, Vector3 point, float duration = 0f)
@@ -180,12 +181,14 @@ namespace Assets.Source.Models
             var vertices = new List<Vector3>()
             {
                 // Corners
-                TopFrontRight, TopFrontLeft, TopRearRight, TopRearLeft, BottomFrontRight, BottomFrontLeft, BottomRearRight, BottomRearLeft
+                TopFrontRight, TopFrontLeft, TopRearRight, TopRearLeft, BottomFrontRight, BottomFrontLeft, BottomRearRight, BottomRearLeft,
+
+                // Midpoints
+                PhysicsHelper.GetVectorMidpoint(TopFrontRight, BottomFrontRight),
+                PhysicsHelper.GetVectorMidpoint(TopFrontLeft, BottomFrontLeft),
+                PhysicsHelper.GetVectorMidpoint(TopRearRight, BottomRearRight),
+                PhysicsHelper.GetVectorMidpoint(TopRearLeft, BottomRearLeft)
             };
-            vertices.AddRange(PhysicsHelper.Vector3Between(TopFrontRight, BottomFrontRight, 3));
-            vertices.AddRange(PhysicsHelper.Vector3Between(TopFrontLeft, BottomFrontLeft, 3));
-            vertices.AddRange(PhysicsHelper.Vector3Between(TopRearRight, BottomRearRight, 3));
-            vertices.AddRange(PhysicsHelper.Vector3Between(TopRearLeft, BottomRearLeft, 3));
 
             foreach (var vertex in vertices)
             {

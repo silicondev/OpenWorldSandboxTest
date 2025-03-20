@@ -43,6 +43,12 @@ namespace Assets.Source.Systems.Abstracts
             set => GameObject.transform.localPosition = value;
         }
 
+        public Vector3 WorldPosition
+        {
+            get => GameObject.transform.position;
+            set => GameObject.transform.position = value;
+        }
+
         public Quaternion Rotation
         {
             get => GameObject.transform.localRotation;
@@ -145,9 +151,13 @@ namespace Assets.Source.Systems.Abstracts
         protected virtual void OnCollisionExit(Collision collision) { }
         protected virtual void OnTriggerEnter(Collider collider) { }
         protected virtual void OnTriggerExit(Collider collider) { }
+        protected virtual void OnObjectDispose() { }
 
         public void SetParent(Transform parent) =>
             GameObject.transform.parent = parent;
+
+        public void SetParent(InGameObject obj) =>
+            SetParent(obj.GameObject.transform);
 
         public void SetTexture(Texture2D texture) =>
             Renderer.material.SetTexture("_MainTex", texture);
@@ -156,6 +166,7 @@ namespace Assets.Source.Systems.Abstracts
 
         public void Dispose(bool triggerEvent)
         {
+            OnObjectDispose();
             string name = Name;
             if (_gameObject != null)
             {
@@ -163,7 +174,7 @@ namespace Assets.Source.Systems.Abstracts
                 _gameObject = null;
             }
             if (triggerEvent)
-                OnDispose.Invoke(this, new InGameObjectEventArgs(name));
+                OnDispose?.Invoke(this, new InGameObjectEventArgs(name));
         }
 
         public event EventHandler<InGameObjectEventArgs> OnDispose;

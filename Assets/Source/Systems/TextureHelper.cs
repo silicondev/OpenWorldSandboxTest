@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Assets.Source.Models;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -10,6 +11,8 @@ namespace Assets.Source.Systems
 {
     public static class TextureHelper
     {
+        public static Dictionary<TextureSheet, SpriteTexture> Textures { get; } = new();
+
         public static Texture2D LoadFromImage(string path)
         {
             if (!File.Exists(path))
@@ -17,6 +20,7 @@ namespace Assets.Source.Systems
 
             var bytes = File.ReadAllBytes(path);
             var texture = new Texture2D(2, 2);
+            texture.alphaIsTransparency = true;
             texture.filterMode = FilterMode.Point;
             texture.LoadImage(bytes);
             return texture;
@@ -107,7 +111,7 @@ namespace Assets.Source.Systems
             return uv;
         }
 
-        public static Vector2[] GetVoxelUV(int sheetSizeX, int sheetSizeY, int voxelSize, Vector2 pos, float offset = 0f)
+        public static Vector2[] GetVoxelUV(int sheetSizeX, int sheetSizeY, int voxelSize, Vector2 pos, float offset = 0.03f)
         {
             if (!int.TryParse((sheetSizeX / voxelSize).ToString(), out int voxelWidth) || !int.TryParse((sheetSizeY / voxelSize).ToString(), out int voxelHeight))
                 throw new ArgumentException("Sheet size and voxel size do not divide equally.");
@@ -140,15 +144,21 @@ namespace Assets.Source.Systems
 
             */
 
-            uv[0] = rel + voxelRel;
-            uv[1] = rel + voxelRelY + offsetX;
-            uv[2] = rel + voxelRelX + offsetY;
+            uv[0] = rel + voxelRel - offsetX - offsetY;
+            uv[1] = rel + voxelRelY - offsetY;
+            uv[2] = rel + voxelRelX - offsetX;
 
-            uv[3] = rel + offsetX + offsetY;
-            uv[4] = rel + voxelRelX + offsetY;
-            uv[5] = rel + voxelRelY + offsetX;
+            uv[3] = rel;
+            uv[4] = rel + voxelRelX - offsetX;
+            uv[5] = rel + voxelRelY - offsetY;
 
             return uv;
         }
+    }
+
+    public enum TextureSheet
+    {
+        TILES,
+        HUD
     }
 }

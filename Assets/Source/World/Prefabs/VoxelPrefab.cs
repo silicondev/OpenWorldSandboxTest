@@ -23,22 +23,22 @@ namespace Assets.Source.World.Prefabs
         public Vector2[] GetVoxelUV(int spriteSheetWidth, int spriteSheetHeight) =>
             TextureHelper.GetVoxelUV(spriteSheetWidth, spriteSheetHeight, 8, TopTexPos, BottomTexPos, FrontTexPos, RightTexPos, BackTexPos, LeftTexPos);
 
-        public Vector2[] GetVoxelUV(VoxelFace face, int spriteSheetWidth, int spriteSheetHeight)
+        public Vector2[] GetVoxelUV(VoxelFace face, int spriteSheetWidth, int spriteSheetHeight, int spriteSize)
         {
             switch (face)
             {
                 case VoxelFace.TOP:
-                    return TextureHelper.GetVoxelUV(spriteSheetWidth, spriteSheetHeight, 8, TopTexPos);
+                    return TextureHelper.GetVoxelUV(spriteSheetWidth, spriteSheetHeight, spriteSize, TopTexPos);
                 case VoxelFace.BOTTOM:
-                    return TextureHelper.GetVoxelUV(spriteSheetWidth, spriteSheetHeight, 8, BottomTexPos);
+                    return TextureHelper.GetVoxelUV(spriteSheetWidth, spriteSheetHeight, spriteSize, BottomTexPos);
                 case VoxelFace.LEFT:
-                    return TextureHelper.GetVoxelUV(spriteSheetWidth, spriteSheetHeight, 8, LeftTexPos);
+                    return TextureHelper.GetVoxelUV(spriteSheetWidth, spriteSheetHeight, spriteSize, LeftTexPos);
                 case VoxelFace.RIGHT:
-                    return TextureHelper.GetVoxelUV(spriteSheetWidth, spriteSheetHeight, 8, RightTexPos);
+                    return TextureHelper.GetVoxelUV(spriteSheetWidth, spriteSheetHeight, spriteSize, RightTexPos);
                 case VoxelFace.FRONT:
-                    return TextureHelper.GetVoxelUV(spriteSheetWidth, spriteSheetHeight, 8, FrontTexPos);
+                    return TextureHelper.GetVoxelUV(spriteSheetWidth, spriteSheetHeight, spriteSize, FrontTexPos);
                 case VoxelFace.BACK:
-                    return TextureHelper.GetVoxelUV(spriteSheetWidth, spriteSheetHeight, 8, BackTexPos);
+                    return TextureHelper.GetVoxelUV(spriteSheetWidth, spriteSheetHeight, spriteSize, BackTexPos);
             }
             return new Vector2[6];
         }

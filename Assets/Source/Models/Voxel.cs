@@ -36,7 +36,8 @@ namespace Assets.Source.Models
         VOID,
         GRASS,
         DIRT,
-        STONE
+        STONE,
+        PLANKS
     }
 
     public enum VoxelFace

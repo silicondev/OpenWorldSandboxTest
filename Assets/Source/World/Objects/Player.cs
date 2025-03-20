@@ -14,7 +14,8 @@ namespace Assets.Source.World.Objects
 {
     public class Player : InGameObject
     {
-        public GameObject Camera { get; private set; } = new GameObject();
+        //public GameObject Camera { get; private set; } = new GameObject();
+        public GameCamera Camera { get; private set; } = new GameCamera();
 
         public Location Location => Location.ClampVector(GameObject.transform.position);
 
@@ -23,9 +24,10 @@ namespace Assets.Source.World.Objects
 
         }
 
-        public Vector3 Front => Quaternion.Euler(new Vector3(0, Camera.transform.eulerAngles.y, 0)) * Vector3.forward;
+        public Vector3 Facing => Quaternion.Euler(Camera.GameObject.transform.eulerAngles) * Vector3.forward;
+        public Vector3 Front => Quaternion.Euler(new Vector3(0, Camera.GameObject.transform.eulerAngles.y, 0)) * Vector3.forward;
         //public Vector3 Front => Camera.transform.forward;
-        public Vector3 Right => Quaternion.Euler(new Vector3(0, Camera.transform.eulerAngles.y, 0)) * Vector3.right;
+        public Vector3 Right => Quaternion.Euler(new Vector3(0, Camera.GameObject.transform.eulerAngles.y, 0)) * Vector3.right;
         public Vector3 Left => -Right;
         public Vector3 Back => -Front;
 
@@ -42,6 +44,9 @@ namespace Assets.Source.World.Objects
             obj.transform.localScale = new Vector3(0.75f, 1.8f, 0.75f);
 
             GameObject.Destroy(newObj);
+
+            obj.AddComponent<LineRenderer>();
+            obj.GetComponent<LineRenderer>().enabled = false;
         }
 
         protected override void OnStart()
@@ -50,17 +55,18 @@ namespace Assets.Source.World.Objects
             Gravity = 24f;
             //Gravity = 0f;
 
-            Camera.tag = "MainCamera";
-            Camera.name = "Camera";
-            Camera.transform.SetParent(GameObject.transform);
-            Camera.transform.localPosition = new Vector3(0, 0.35f, 0);
-            Camera.AddComponent<Camera>();
+            //Camera.tag = "MainCamera";
+            //Camera.name = "Camera";
+            //Camera.transform.SetParent(GameObject.transform);
+            //Camera.transform.localPosition = new Vector3(0, 0.35f, 0);
+            //Camera.AddComponent<Camera>();
+            Camera.Name = "Camera";
+            Camera.SetParent(this);
+            Camera.Position = new Vector3(0, 0.35f, 0);
         }
 
         private int _updateTimeCount = 0;
         private bool _updateTime => _updateTimeCount >= 1f / Time.deltaTime;
-
-        private Vector3 _lastMouse = new Vector3(-1, -1, -1);
 
         private float _sensitivity = 3f;
 
@@ -82,28 +88,44 @@ namespace Assets.Source.World.Objects
                 Cursor.lockState = CursorLockMode.Confined;
                 Cursor.visible = false;
 
-                Camera.transform.eulerAngles = Look;
+                Camera.GameObject.transform.eulerAngles = Look;
 
                 // block placing/breaking
-                if (Physics.Raycast(Camera.transform.position, Camera.transform.forward, out RaycastHit hit, 5))
+                GameObject.GetComponent<LineRenderer>().enabled = false;
+                if (Physics.Raycast(Camera.WorldPosition, Facing, out RaycastHit hit, 5))
                 {
-                    var normal = hit.normal;
+                    var normal = hit.normal * 0.01f;
                     var keys = KeyboardHelper.GetPressKeys(KeyCode.Mouse0, KeyCode.Mouse1);
 
-                    var pos = hit.point - (normal * 0.01f);
-                    var block = GameSystem.WorldData.GetBlock(pos);
+                    var block = GameSystem.WorldData.GetBlock(hit.point - normal);
 
                     if (block != null && block.Type != VoxelType.VOID)
                     {
                         var box = block.GetBox();
 
-                        GameSystem.DrawBlockLines(block.Location);
+                        GameObject.GetComponent<LineRenderer>().enabled = true;
+                        box.DrawLines(GameObject.GetComponent<LineRenderer>(), Color.red, 0.01f);
 
                         if (keys.Contains(KeyCode.Mouse1))
                         {
                             GameSystem.WorldData.SetBlock(block.Location, VoxelType.VOID);
                             var id = GameSystem.WorldData.GetChunk(block.Location).Id;
                             GameSystem.RegenChunk(id);
+                            GameSystem.RegenChunk(id.AddX(1));
+                            GameSystem.RegenChunk(id.AddX(-1));
+                            GameSystem.RegenChunk(id.AddZ(1));
+                            GameSystem.RegenChunk(id.AddZ(-1));
+                        }
+                        if (keys.Contains(KeyCode.Mouse0))
+                        {
+                            var changeBlock = GameSystem.WorldData.GetBlock(hit.point + normal);
+                            GameSystem.WorldData.SetBlock(changeBlock.Location, VoxelType.PLANKS);
+                            var id = GameSystem.WorldData.GetChunk(changeBlock.Location).Id;
+                            GameSystem.RegenChunk(id);
+                            GameSystem.RegenChunk(id.AddX(1));
+                            GameSystem.RegenChunk(id.AddX(-1));
+                            GameSystem.RegenChunk(id.AddZ(1));
+                            GameSystem.RegenChunk(id.AddZ(-1));
                         }
                     }
                 }
@@ -176,15 +198,9 @@ namespace Assets.Source.World.Objects
             return (newPosition, newVelocity);
         }
 
-        protected override void OnTriggerEnter(Collider collider)
+        protected override void OnObjectDispose()
         {
-
-            Console.WriteLine();
-        }
-
-        protected override void OnCollisionExit(Collision collision)
-        {
-
+            Camera.Dispose();
         }
 
         public EventHandler<PlayerMoveEventArgs> OnPlayerMove;
