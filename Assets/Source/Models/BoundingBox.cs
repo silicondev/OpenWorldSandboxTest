@@ -104,6 +104,36 @@ namespace Assets.Source.Models
             }
         }
 
+        public void DrawLines(LineRenderer renderer, Color color, float width)
+        {
+            renderer.positionCount = 16;
+
+            renderer.SetPositions(new Vector3[]
+            {
+                TopFrontRight
+                ,TopRearRight
+                ,BottomRearRight
+                ,BottomFrontRight
+                ,BottomFrontLeft
+                ,BottomRearLeft
+                ,TopRearLeft
+                ,TopFrontLeft
+                ,TopFrontRight
+                ,BottomFrontRight
+                ,BottomFrontLeft
+                ,TopFrontLeft
+                ,TopRearLeft
+                ,TopRearRight
+                ,BottomRearRight
+                ,BottomRearLeft
+            });
+
+            renderer.startColor = color;
+            renderer.endColor = color;
+            renderer.startWidth = width;
+            renderer.endWidth = width;
+        }
+
         public void DrawDebugLines(Color color, Vector3 point, float duration = 0f)
         {
             Debug.DrawLine(TopFrontRight, point, color, duration);

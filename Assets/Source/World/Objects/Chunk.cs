@@ -81,6 +81,9 @@ namespace Assets.Source.World.Objects
             obj.GetComponent<MeshCollider>().sharedMesh = mesh;
             obj.GetComponent<MeshCollider>().convex = false;
 
+            obj.AddComponent<LineRenderer>();
+            obj.GetComponent<LineRenderer>().enabled = true;
+
             obj.transform.position = (Id * GameSystem.GenerationSettings.ChunkSize).ToVector3() + new Vector3(-1, 0, -1);
         }
 
@@ -95,6 +98,15 @@ namespace Assets.Source.World.Objects
             mesh.RecalculateNormals();
             GameObject.GetComponent<MeshFilter>().mesh = mesh;
             GameObject.GetComponent<MeshCollider>().sharedMesh = mesh;
+        }
+
+        public void DrawLines(Location blockLocation)
+        {
+            var renderer = GameObject.GetComponent<LineRenderer>();
+
+            var block = GameSystem.WorldData.GetBlock(blockLocation);
+            var box = block.GetBox();
+            box.DrawLines(renderer, Color.red, 0.1f);
         }
 
         private Task<(Vector3[] vertices, int[] triangles, Vector2[] uv)> GetMeshData() => Task.Factory.StartNew(() =>

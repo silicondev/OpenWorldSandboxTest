@@ -83,6 +83,30 @@ namespace Assets.Source.World.Objects
                 Cursor.visible = false;
 
                 Camera.transform.eulerAngles = Look;
+
+                // block placing/breaking
+                if (Physics.Raycast(Camera.transform.position, Camera.transform.forward, out RaycastHit hit, 5))
+                {
+                    var normal = hit.normal;
+                    var keys = KeyboardHelper.GetPressKeys(KeyCode.Mouse0, KeyCode.Mouse1);
+
+                    var pos = hit.point - (normal * 0.01f);
+                    var block = GameSystem.WorldData.GetBlock(pos);
+
+                    if (block != null && block.Type != VoxelType.VOID)
+                    {
+                        var box = block.GetBox();
+
+                        GameSystem.DrawBlockLines(block.Location);
+
+                        if (keys.Contains(KeyCode.Mouse1))
+                        {
+                            GameSystem.WorldData.SetBlock(block.Location, VoxelType.VOID);
+                            var id = GameSystem.WorldData.GetChunk(block.Location).Id;
+                            GameSystem.RegenChunk(id);
+                        }
+                    }
+                }
             }
             else
             {

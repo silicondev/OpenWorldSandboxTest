@@ -100,7 +100,7 @@ public class GameSystem : MonoBehaviour
 
         WorldData = new WorldData(generator);
         await WorldData.Generate(new Location(0, 0, 0), RenderDistance + 2);
-        RegenChunks(new Location(0, 0, 0));
+        RegenChunks(new Location(0, 0, 0), RenderDistance);
 
         // INITIALISE PLAYER
 
@@ -116,7 +116,7 @@ public class GameSystem : MonoBehaviour
             if (_lastChunkId != newChunkId)
             {
                 await WorldData.Generate(newChunkId, RenderDistance + 2);
-                RegenChunks(newChunkId);
+                RegenChunks(newChunkId, RenderDistance);
                 _lastChunkId = newChunkId;
             }
         };
@@ -124,9 +124,25 @@ public class GameSystem : MonoBehaviour
         LoadedObjects.Add(player);
     }
 
-    private void RegenChunks(Location id)
+    public static void RegenChunk(Location id)
     {
-        (RealRange xRange, RealRange yRange) = WorldData.GetChunkLoadDistance(id, RenderDistance);
+        var chunk = (Chunk)LoadedObjects.FirstOrDefault(x => x.Name == id.ToString("chunk_X,Z"));
+        if (chunk != null)
+        {
+            chunk.Regenerate();
+        }
+    }
+
+    public static void DrawBlockLines(Location blockLocation)
+    {
+        var chunkId = WorldData.GetChunk(blockLocation).Id;
+        var chunk = (Chunk)LoadedObjects.FirstOrDefault(x => x.Name == chunkId.ToString("chunk_X,Z"));
+        chunk.DrawLines(blockLocation);
+    }
+
+    private void RegenChunks(Location id, int distance = 0)
+    {
+        (RealRange xRange, RealRange yRange) = WorldData.GetChunkLoadDistance(id, distance);
 
         var newNames = new List<string>();
         string format = "chunk_X,Z";
